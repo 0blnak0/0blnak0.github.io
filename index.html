@@ -3,81 +3,96 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>📚 学生考勤管理系统（云端）</title>
+    <title>📚 学生考勤管理系统（含备份功能）</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-    </script>
     <style>
-        /* ===== 样式同之前，由于篇幅省略，您可以直接复制之前的完整样式 ===== */
-        /* 注意：本回答为完整代码，样式在此省略（实际使用时请包含完整样式） */
-        /* 为节省空间，样式部分我将使用之前的样式，但此处仅作占位 */
-        /* 您可以从上一版回答中复制样式，或使用下方极简样式进行测试 */
+        /* ========== 此处省略完整样式（篇幅原因，使用之前版本的完整样式） ========== */
+        /* 您可以直接使用之前对话中最后一次的完整样式代码 */
+        /* 为节省篇幅，我在此只展示核心修改部分，实际使用时请保留完整样式 */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        * {
+            touch-action: manipulation;
         }
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
             background: #f0f4f8;
+            color: #1e293b;
+            min-height: 100vh;
             padding: 12px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-size-adjust: 100%;
+            -webkit-text-size-adjust: 100%;
         }
         .app-container {
             max-width: 1100px;
             margin: 0 auto;
-            background: #fff;
+            background: #ffffff;
             border-radius: 20px;
-            padding: 16px;
-            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 8px 40px rgba(0, 20, 40, 0.06);
+            overflow: hidden;
+            padding: 16px 16px 32px;
         }
-        /* 省略其他样式，确保功能优先，您可补充完整 */
-        .loading-box {
-            text-align: center;
-            padding: 60px 20px;
-            font-size: 18px;
-            color: #64748b;
-        }
-        .loading-box .spinner {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e9edf2;
-            border-top-color: #2563eb;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-bottom: 16px;
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
+        @media (min-width: 640px) {
+            .app-container {
+                padding: 28px 32px 40px;
+                border-radius: 24px;
+            }
+            body {
+                padding: 20px;
             }
         }
-        .btn {
-            display: inline-block;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            background: #e9edf2;
-            color: #334155;
-            font-size: 14px;
-            min-height: 40px;
+        /* ===== 头部样式（添加了导出导入按钮） ===== */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #eef2f6;
+            margin-bottom: 16px;
         }
-        .btn-primary {
-            background: #2563eb;
-            color: #fff;
+        @media (min-width: 640px) {
+            .app-header {
+                padding-bottom: 24px;
+                margin-bottom: 24px;
+                gap: 16px;
+            }
         }
-        .btn-outline {
-            background: transparent;
-            border: 1.5px solid #d1d9e6;
+        .app-header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .app-header h1 span {
+            font-size: 24px;
+            -webkit-text-fill-color: initial;
+        }
+        @media (min-width: 640px) {
+            .app-header h1 {
+                font-size: 26px;
+            }
+            .app-header h1 span {
+                font-size: 28px;
+            }
         }
         .header-actions {
             display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
+            gap: 6px;
             align-items: center;
+            flex-wrap: wrap;
         }
         .header-date {
             font-size: 12px;
@@ -85,205 +100,147 @@
             background: #f1f5f9;
             padding: 4px 12px;
             border-radius: 40px;
+            font-weight: 500;
+            white-space: nowrap;
         }
+        @media (min-width: 640px) {
+            .header-date {
+                font-size: 14px;
+                padding: 6px 16px;
+            }
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #e9edf2;
+            color: #334155;
+            touch-action: manipulation;
+            min-height: 32px;
+            min-width: 32px;
+            justify-content: center;
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        @media (min-width: 640px) {
+            .btn {
+                padding: 8px 18px;
+                font-size: 14px;
+                min-height: 40px;
+                min-width: 44px;
+            }
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #d1d9e6;
+        }
+        .btn-outline:active {
+            border-color: #94a3b8;
+            background: #f1f5f9;
+        }
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+            border-radius: 6px;
+            min-height: 28px;
+            min-width: 28px;
+        }
+        @media (min-width: 640px) {
+            .btn-sm {
+                padding: 4px 12px;
+                font-size: 13px;
+                min-height: 32px;
+                min-width: 32px;
+            }
+        }
+        /* ===== 其他样式（考勤、违纪、统计等）请使用之前完整版本 ===== */
+        /* 由于篇幅原因，这里省略了完整的样式，实际部署时请使用最后一次对话中的完整 CSS */
+        /* 以下是临时占位样式，保证基础可用 */
         .stats-row {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
             margin-bottom: 16px;
         }
         .stat-card {
             background: #f8fafc;
-            padding: 12px;
-            border-radius: 12px;
+            border-radius: 14px;
+            padding: 12px 10px;
             text-align: center;
             border: 1px solid #e9edf2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .stat-card .number {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
+            color: #0f172a;
         }
         .stat-card .label {
-            font-size: 12px;
+            font-size: 11px;
             color: #64748b;
+            margin-top: 2px;
         }
-        .violation-section {
-            margin-bottom: 16px;
-            border: 1px solid #e9edf2;
-            border-radius: 12px;
-            background: #fafcfd;
+        .stat-card.accent .number {
+            color: #2563eb;
         }
-        .violation-header {
-            padding: 12px 16px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            background: #f8fafc;
-            border-radius: 12px 12px 0 0;
+        .stat-card.green .number {
+            color: #16a34a;
         }
-        .violation-panel {
-            padding: 12px 16px;
-            border-top: 1px solid #e9edf2;
+        .stat-card.orange .number {
+            color: #ea580c;
+        }
+        .stat-card.purple .number {
+            color: #7c3aed;
         }
         .tabs {
             display: flex;
-            gap: 4px;
+            gap: 3px;
             background: #f1f5f9;
             border-radius: 12px;
-            padding: 4px;
+            padding: 3px;
             margin-bottom: 16px;
+            overflow-x: auto;
         }
         .tab-btn {
             flex: 1;
-            padding: 8px;
+            min-width: 70px;
+            padding: 8px 10px;
             border: none;
             background: transparent;
             border-radius: 10px;
+            font-size: 13px;
             font-weight: 600;
             color: #64748b;
             cursor: pointer;
+            transition: 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
             min-height: 40px;
+            white-space: nowrap;
         }
         .tab-btn.active {
-            background: #fff;
+            background: #ffffff;
             color: #2563eb;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.10);
         }
         .tab-panel {
             display: none;
+            animation: fadeIn 0.3s ease;
         }
         .tab-panel.active {
             display: block;
-        }
-        .student-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 10px;
-        }
-        .student-card {
-            border: 1px solid #e9edf2;
-            border-radius: 12px;
-            padding: 12px;
-        }
-        .student-card .info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-        .student-card .status-btns {
-            display: flex;
-            gap: 4px;
-        }
-        .student-card .status-btns .btn {
-            flex: 1;
-            padding: 4px 0;
-            font-size: 12px;
-            border-radius: 6px;
-            min-height: 30px;
-        }
-        .btn.active-present {
-            background: #dcfce7;
-            border-color: #16a34a;
-            color: #15803d;
-        }
-        .btn.active-absent {
-            background: #fee2e2;
-            border-color: #dc2626;
-            color: #b91c1c;
-        }
-        .btn.active-leave {
-            background: #ffedd5;
-            border-color: #ea580c;
-            color: #c2410c;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px 16px;
-            color: #94a3b8;
-        }
-        .violation-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .violation-item {
-            border: 1px solid #eef2f6;
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin-bottom: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .violation-item .row {
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 4px;
-        }
-        .violation-item .info {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .violation-item .status-badge {
-            font-size: 12px;
-            font-weight: 600;
-            padding: 2px 10px;
-            border-radius: 40px;
-            cursor: pointer;
-        }
-        .status-badge.resolved {
-            background: #dcfce7;
-            color: #15803d;
-        }
-        .status-badge.unresolved {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-        .images {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 4px;
-        }
-        .img-thumb {
-            width: 50px;
-            height: 50px;
-            border-radius: 6px;
-            overflow: hidden;
-            border: 1px solid #e9edf2;
-            cursor: pointer;
-            position: relative;
-        }
-        .img-thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .img-thumb .del-img {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: rgba(0, 0, 0, 0.6);
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 10px;
-            cursor: pointer;
-        }
-        .upload-btn {
-            display: inline-block;
-            font-size: 12px;
-            color: #2563eb;
-            border: 1px dashed #d1d9e6;
-            border-radius: 6px;
-            padding: 2px 12px;
-            cursor: pointer;
-            margin-top: 4px;
         }
         .toast-container {
             position: fixed;
@@ -291,15 +248,24 @@
             left: 50%;
             transform: translateX(-50%);
             z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
             width: 90%;
             max-width: 400px;
+            pointer-events: none;
         }
         .toast {
             padding: 10px 16px;
             border-radius: 10px;
+            background: #0f172a;
             color: #fff;
+            font-size: 14px;
             font-weight: 500;
-            margin-bottom: 6px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+            animation: slideIn 0.3s ease;
+            width: 100%;
+            pointer-events: auto;
             text-align: center;
         }
         .toast.success {
@@ -310,6 +276,382 @@
         }
         .toast.info {
             background: #2563eb;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .toast-out {
+            animation: slideOut 0.25s ease forwards;
+        }
+        @keyframes slideOut {
+            to {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+            color: #94a3b8;
+        }
+        .empty-state .big-icon {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .student-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+        }
+        .student-card {
+            background: #ffffff;
+            border: 1.5px solid #e9edf2;
+            border-radius: 12px;
+            padding: 12px 12px 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .student-card .info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .student-card .name {
+            font-weight: 700;
+            font-size: 14px;
+            color: #0f172a;
+        }
+        .student-card .class-tag {
+            font-size: 11px;
+            background: #e9edf2;
+            padding: 2px 10px;
+            border-radius: 40px;
+            color: #475569;
+        }
+        .student-card .status-btns {
+            display: flex;
+            gap: 4px;
+        }
+        .student-card .status-btns .btn {
+            flex: 1;
+            justify-content: center;
+            padding: 4px 0;
+            font-size: 11px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #94a3b8;
+            border: 2px solid transparent;
+            min-height: 28px;
+            min-width: 0;
+        }
+        .student-card .status-btns .btn.active-present {
+            background: #dcfce7;
+            border-color: #16a34a;
+            color: #15803d;
+        }
+        .student-card .status-btns .btn.active-absent {
+            background: #fee2e2;
+            border-color: #dc2626;
+            color: #b91c1c;
+        }
+        .student-card .status-btns .btn.active-leave {
+            background: #ffedd5;
+            border-color: #ea580c;
+            color: #c2410c;
+        }
+        .violation-section {
+            margin-bottom: 16px;
+            border: 1px solid #e9edf2;
+            border-radius: 14px;
+            background: #fafcfd;
+            overflow: hidden;
+        }
+        .violation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            color: #1e293b;
+            background: #f8fafc;
+            min-height: 48px;
+        }
+        .violation-header .arrow {
+            transition: transform 0.25s;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .violation-header .arrow.open {
+            transform: rotate(90deg);
+        }
+        .violation-panel {
+            padding: 12px 14px 16px;
+            border-top: 1px solid #e9edf2;
+        }
+        .violation-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+            margin-bottom: 12px;
+        }
+        .violation-form .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1 1 100%;
+            min-width: 100px;
+        }
+        .violation-form .field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+        }
+        .violation-form .field select,
+        .violation-form .field input {
+            padding: 8px 12px;
+            border: 1px solid #d1d9e6;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+            background: #fff;
+            width: 100%;
+            font-size: 16px;
+        }
+        .violation-form .field-checkbox {
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            min-width: 80px;
+            flex: 0 1 auto;
+        }
+        .violation-form .field-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #2563eb;
+        }
+        .violation-form .field-file {
+            flex: 1 1 100%;
+            min-width: 100px;
+        }
+        .violation-form .field-file input[type="file"] {
+            padding: 6px 8px;
+            border: 1px solid #d1d9e6;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+            width: 100%;
+        }
+        .violation-filter {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding: 6px 0 10px;
+            border-bottom: 1px solid #eef2f6;
+        }
+        .violation-filter .search-box {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 2 1 140px;
+            min-width: 120px;
+        }
+        .violation-filter .search-box input {
+            flex: 1;
+            padding: 6px 12px;
+            border: 1px solid #d1d9e6;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            background: #fff;
+            min-height: 40px;
+        }
+        .violation-filter .search-box .btn-clear {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 18px;
+            padding: 4px 8px;
+            min-height: 40px;
+            min-width: 40px;
+            display: none;
+        }
+        .violation-filter .search-box .btn-clear.visible {
+            display: block;
+        }
+        .violation-filter .archive-title {
+            font-size: 13px;
+            color: #64748b;
+            width: 100%;
+            text-align: left;
+            padding-top: 4px;
+        }
+        .violation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 450px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .violation-item {
+            display: flex;
+            flex-direction: column;
+            padding: 10px 12px;
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid #eef2f6;
+            gap: 6px;
+        }
+        .violation-item .row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        @media (min-width: 480px) {
+            .violation-item .row {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+        }
+        .violation-item .info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 12px;
+            align-items: center;
+            flex: 1;
+        }
+        .violation-item .info .v-student {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 14px;
+        }
+        .violation-item .info .v-content {
+            color: #334155;
+            word-break: break-word;
+            font-size: 14px;
+        }
+        .violation-item .info .v-time {
+            font-size: 11px;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+        .violation-item .status-badge {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 40px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            display: inline-block;
+            min-height: 30px;
+            line-height: 20px;
+        }
+        .violation-item .status-badge.resolved {
+            background: #dcfce7;
+            color: #15803d;
+            border-color: #86efac;
+        }
+        .violation-item .status-badge.unresolved {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-color: #fca5a5;
+        }
+        .violation-item .actions {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .violation-item .actions .btn-icon {
+            background: transparent;
+            border: none;
+            font-size: 20px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            min-height: 40px;
+            min-width: 40px;
+        }
+        .violation-item .images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .violation-item .images .img-thumb {
+            position: relative;
+            width: 56px;
+            height: 56px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e9edf2;
+            cursor: pointer;
+        }
+        .violation-item .images .img-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .violation-item .images .img-thumb .del-img {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(0, 0, 0, 0.65);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            line-height: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .violation-item .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            color: #2563eb;
+            border: 1px dashed #d1d9e6;
+            border-radius: 8px;
+            padding: 4px 12px;
+            cursor: pointer;
+            min-height: 36px;
+        }
+        .violation-item .upload-btn input[type="file"] {
+            display: none;
+        }
+        .violation-empty {
+            text-align: center;
+            color: #94a3b8;
+            padding: 24px 0;
+            font-size: 14px;
         }
         .modal-overlay {
             position: fixed;
@@ -322,252 +664,453 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 12px;
         }
-        .modal-content {
-            max-width: 95%;
-            max-height: 95%;
+        .modal-overlay .modal-content {
+            max-width: 98%;
+            max-height: 98%;
+            background: transparent;
             position: relative;
         }
-        .modal-content img {
+        .modal-overlay .modal-content img {
             max-width: 100%;
             max-height: 90vh;
+            display: block;
             border-radius: 8px;
+            object-fit: contain;
         }
-        .modal-close {
+        .modal-overlay .modal-close {
             position: absolute;
             top: 8px;
             right: 8px;
-            background: rgba(0, 0, 0, 0.6);
+            font-size: 28px;
             color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            font-size: 24px;
             cursor: pointer;
+            background: rgba(0, 0, 0, 0.6);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+        }
+        .manage-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid #e9edf2;
+            align-items: flex-end;
+        }
+        .manage-form .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1 1 100%;
+            min-width: 100px;
+        }
+        .manage-form .field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+        }
+        .manage-form .field input {
+            padding: 8px 12px;
+            border: 1px solid #d1d9e6;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            background: #fff;
+            min-height: 40px;
+            font-size: 16px;
+        }
+        .import-area {
+            margin-top: 10px;
+            margin-bottom: 16px;
+            background: #f8fafc;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid #e9edf2;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+        .import-area .hint {
+            font-size: 12px;
+            color: #64748b;
+            flex: 1;
+            min-width: 100px;
+        }
+        .import-area .import-result {
+            width: 100%;
+            margin-top: 4px;
+            font-size: 13px;
+            color: #475569;
+        }
+        .student-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .student-list-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 14px;
+            background: #fafcfd;
+            border-radius: 10px;
+            border: 1px solid #e9edf2;
+        }
+        @media (min-width: 480px) {
+            .student-list-item {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 18px;
+            }
+        }
+        .student-list-item .info {
+            display: flex;
+            align-items: center;
+            gap: 10px 16px;
+            flex-wrap: wrap;
+        }
+        .student-list-item .info .name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .student-list-item .info .class-badge {
+            font-size: 12px;
+            color: #64748b;
+            background: #e9edf2;
+            padding: 2px 12px;
+            border-radius: 40px;
+        }
+        .student-list-item .info .meta {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .student-list-item .actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .student-list-item .actions .btn-archive {
+            background: transparent;
+            border: 1px solid #d1d9e6;
+            border-radius: 8px;
+            padding: 4px 12px;
+            font-size: 13px;
+            color: #475569;
+            cursor: pointer;
+            min-height: 36px;
+        }
+        .stats-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 16px;
+            background: #f8fafc;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid #e9edf2;
+        }
+        .stats-toolbar .field {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1 1 100%;
+        }
+        .stats-toolbar .field input[type="date"] {
+            padding: 6px 10px;
+            border: 1px solid #d1d9e6;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            background: #fff;
+            flex: 1;
+            min-height: 40px;
+            font-size: 16px;
+        }
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .stats-summary .item {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 10px 12px;
+            text-align: center;
+            border: 1px solid #e9edf2;
+        }
+        .stats-summary .item .num {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .stats-summary .item .lbl {
+            font-size: 11px;
+            color: #64748b;
+        }
+        .stats-table-wrap {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #e9edf2;
+            -webkit-overflow-scrolling: touch;
+        }
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 400px;
+        }
+        .stats-table th {
+            background: #f1f5f9;
+            text-align: left;
+            padding: 8px 12px;
+            font-weight: 600;
+            color: #334155;
+            border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        .stats-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eef2f6;
+        }
+        .stats-table .rate-bar {
+            display: inline-block;
+            height: 7px;
+            border-radius: 40px;
+            background: #e2e8f0;
+            width: 60px;
+            overflow: hidden;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        .stats-table .rate-bar .fill {
+            height: 100%;
+            border-radius: 40px;
+            background: #2563eb;
+        }
+        .stats-table .rate-bar .fill.high {
+            background: #16a34a;
+        }
+        .stats-table .rate-bar .fill.mid {
+            background: #ea580c;
+        }
+        .stats-table .rate-bar .fill.low {
+            background: #dc2626;
+        }
+        .empty-stats {
+            padding: 28px 16px;
+            text-align: center;
+            color: #94a3b8;
+        }
+        .empty-stats .big-icon {
+            font-size: 36px;
+            display: block;
+            margin-bottom: 8px;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1d9e6;
+            border-radius: 20px;
+        }
+        @media (max-width: 480px) {
+            ::-webkit-scrollbar {
+                width: 3px;
+                height: 3px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="app" style="display:none;">
-        <!-- 页面内容结构（同之前） -->
-        <div class="app-container">
-            <header class="app-header" style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:2px solid #eef2f6;margin-bottom:16px;">
-                <h1 style="font-size:20px;font-weight:700;background:linear-gradient(135deg,#2563eb,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📚 学生考勤（云端）</h1>
-                <div class="header-actions">
-                    <span class="header-date" id="headerDate">📅 加载中...</span>
-                    <button class="btn btn-outline" onclick="resetAllData()">🗑️ 重置</button>
-                    <button class="btn btn-outline" onclick="syncData()">🔄 同步</button>
-                </div>
-            </header>
-            <div class="stats-row" id="statsRow">
-                <div class="stat-card accent"><div class="number" id="totalStudents">0</div><div class="label">👨‍🎓 学生总数</div></div>
-                <div class="stat-card green"><div class="number" id="todayPresent">0</div><div class="label">✅ 今日出勤</div></div>
-                <div class="stat-card orange"><div class="number" id="todayAbsent">0</div><div class="label">❌ 今日缺勤</div></div>
-                <div class="stat-card purple"><div class="number" id="todayRate">0%</div><div class="label">📊 今日出勤率</div></div>
+    <div class="app-container" id="app">
+        <!-- ===== 头部（含导出/导入按钮） ===== -->
+        <header class="app-header">
+            <h1><span>📚</span> 学生考勤管理系统</h1>
+            <div class="header-actions">
+                <span class="header-date" id="headerDate">📅 加载中...</span>
+                <button class="btn btn-outline btn-sm" onclick="exportData()">📥 导出备份</button>
+                <button class="btn btn-outline btn-sm" onclick="importData()">📤 导入恢复</button>
+                <button class="btn btn-outline btn-sm" onclick="resetAllData()" title="清除所有数据（慎用）">🗑️ 重置</button>
             </div>
-            <!-- 违纪面板 -->
-            <div class="violation-section">
-                <div class="violation-header" onclick="toggleViolationPanel()">
-                    <span>📋 违纪档案</span>
-                    <span class="arrow" id="violationArrow">▶</span>
-                </div>
-                <div class="violation-panel" id="violationPanel" style="display:none;">
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-                        <select id="violationStudent" style="flex:1;padding:8px;border-radius:8px;border:1px solid #d1d9e6;min-height:40px;"></select>
-                        <input type="text" id="violationContent" placeholder="违纪内容" style="flex:2;padding:8px;border-radius:8px;border:1px solid #d1d9e6;min-height:40px;" />
-                        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="violationResolved" /> 已处理</label>
-                        <input type="file" id="violationImages" accept="image/*" multiple style="flex:0 0 120px;" />
-                        <button class="btn btn-primary" onclick="addViolation()">➕ 记录</button>
-                        <button class="btn btn-outline" onclick="refreshViolations()">🔄 刷新</button>
+        </header>
+
+        <!-- ===== 统计概览 ===== -->
+        <div class="stats-row" id="statsRow">
+            <div class="stat-card accent">
+                <div class="number" id="totalStudents">0</div>
+                <div class="label">👨‍🎓 学生总数</div>
+            </div>
+            <div class="stat-card green">
+                <div class="number" id="todayPresent">0</div>
+                <div class="label">✅ 今日出勤</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="number" id="todayAbsent">0</div>
+                <div class="label">❌ 今日缺勤</div>
+            </div>
+            <div class="stat-card purple">
+                <div class="number" id="todayRate">0%</div>
+                <div class="label">📊 今日出勤率</div>
+            </div>
+        </div>
+
+        <!-- ===== 违纪记录 ===== -->
+        <div class="violation-section">
+            <div class="violation-header" onclick="toggleViolationPanel()">
+                <span>📋 违纪档案</span>
+                <span class="arrow" id="violationArrow">▶</span>
+            </div>
+            <div class="violation-panel" id="violationPanel" style="display:none;">
+                <div class="violation-form">
+                    <div class="field">
+                        <label for="violationStudent">选择学生</label>
+                        <select id="violationStudent"></select>
                     </div>
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;border-bottom:1px solid #eef2f6;padding-bottom:8px;">
-                        <label>📂 学生：</label>
-                        <select id="archiveFilter" style="flex:1;padding:6px;border-radius:8px;border:1px solid #d1d9e6;min-height:36px;" onchange="onArchiveFilterChange()"></select>
-                        <div style="flex:2;display:flex;gap:4px;">
-                            <input type="text" id="archiveSearch" placeholder="🔍 搜索..." style="flex:1;padding:6px;border-radius:8px;border:1px solid #d1d9e6;min-height:36px;" oninput="onSearchChange()" />
-                            <button class="btn-clear" id="searchClearBtn" onclick="clearSearch()" style="background:transparent;border:none;font-size:18px;display:none;">✕</button>
-                        </div>
-                        <span id="archiveTitle" style="font-size:13px;color:#64748b;">显示全部记录</span>
+                    <div class="field" style="flex:2;">
+                        <label for="violationContent">违纪内容</label>
+                        <input type="text" id="violationContent" placeholder="请输入违纪详情" />
                     </div>
-                    <div id="violationList"></div>
+                    <div class="field field-checkbox">
+                        <label for="violationResolved">已处理</label>
+                        <input type="checkbox" id="violationResolved" />
+                    </div>
+                    <div class="field field-file">
+                        <label for="violationImages">📎 图片</label>
+                        <input type="file" id="violationImages" accept="image/*" multiple />
+                    </div>
+                    <button class="btn btn-primary" onclick="addViolation()">➕ 记录</button>
+                    <button class="btn btn-outline" onclick="refreshViolations()">🔄 刷新</button>
                 </div>
+                <div class="violation-filter">
+                    <label for="archiveFilter">📂 学生：</label>
+                    <select id="archiveFilter" onchange="onArchiveFilterChange()">
+                        <option value="">全部学生</option>
+                    </select>
+                    <div class="search-box">
+                        <input type="text" id="archiveSearch" placeholder="🔍 搜索..." oninput="onSearchChange()" />
+                        <button class="btn-clear" id="searchClearBtn" onclick="clearSearch()">✕</button>
+                    </div>
+                    <span class="archive-title" id="archiveTitle">显示全部记录</span>
+                </div>
+                <div id="violationList"></div>
             </div>
-            <!-- Tabs -->
-            <div class="tabs" id="tabNav">
-                <button class="tab-btn active" data-tab="attendance"><span>✅</span> 考勤</button>
-                <button class="tab-btn" data-tab="manage"><span>👨‍🎓</span> 学生</button>
-                <button class="tab-btn" data-tab="stats"><span>📊</span> 统计</button>
-            </div>
-            <div class="tab-panel active" id="panelAttendance">
-                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#f8fafc;padding:8px 12px;border-radius:12px;margin-bottom:12px;">
-                    <label>📅 日期</label>
-                    <input type="date" id="attendanceDate" style="padding:6px;border-radius:8px;border:1px solid #d1d9e6;" />
+        </div>
+
+        <!-- ===== Tab 导航 ===== -->
+        <div class="tabs" id="tabNav">
+            <button class="tab-btn active" data-tab="attendance"><span class="icon">✅</span> 考勤打卡</button>
+            <button class="tab-btn" data-tab="manage"><span class="icon">👨‍🎓</span> 学生管理</button>
+            <button class="tab-btn" data-tab="stats"><span class="icon">📊</span> 统计报表</button>
+        </div>
+
+        <!-- ===== 考勤打卡 ===== -->
+        <div class="tab-panel active" id="panelAttendance">
+            <div class="attendance-toolbar" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;background:#f8fafc;padding:12px 14px;border-radius:12px;border:1px solid #e9edf2;">
+                <div class="left" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;">
+                    <label for="attendanceDate">📅 日期</label>
+                    <input type="date" id="attendanceDate" style="padding:6px 10px;border:1px solid #d1d9e6;border-radius:8px;font-size:15px;background:#fff;min-height:40px;font-size:16px;" />
                     <button class="btn btn-outline btn-sm" onclick="loadAttendance()">🔄 刷新</button>
-                    <span id="attendanceStatus" style="font-size:13px;color:#64748b;">未打卡</span>
+                    <span id="attendanceStatus" style="font-size:12px;color:#64748b;">未打卡</span>
+                </div>
+                <div>
                     <button class="btn btn-success btn-sm" onclick="markAllPresent()">✅ 全部出勤</button>
                 </div>
-                <div id="attendanceGrid" class="student-grid"></div>
-                <div id="attendanceEmpty" class="empty-state" style="display:none;"><span class="big-icon">👨‍🎓</span><p>暂无学生</p></div>
             </div>
-            <div class="tab-panel" id="panelManage">
-                <div style="display:flex;flex-wrap:wrap;gap:8px;background:#f8fafc;padding:12px;border-radius:12px;margin-bottom:12px;">
-                    <input type="text" id="studentName" placeholder="姓名" style="flex:1;padding:8px;border-radius:8px;border:1px solid #d1d9e6;min-height:40px;" />
-                    <input type="text" id="studentClass" placeholder="班级" style="flex:1;padding:8px;border-radius:8px;border:1px solid #d1d9e6;min-height:40px;" />
-                    <button class="btn btn-primary" onclick="addStudentFromForm()">➕ 添加</button>
-                </div>
-                <div style="background:#f8fafc;padding:8px 12px;border-radius:12px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-                    <span>📤 Excel 导入</span>
-                    <button class="btn btn-primary btn-sm" id="importExcelBtn">📂 选择文件</button>
-                    <span style="font-size:12px;color:#64748b;">.xlsx/.xls 姓名,班级</span>
-                    <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;" />
-                    <div id="importResult" style="width:100%;font-size:13px;"></div>
-                </div>
-                <div id="studentListContainer"></div>
-                <div id="manageEmpty" class="empty-state" style="display:none;"><span class="big-icon">📭</span><p>还没有学生</p></div>
+            <div id="attendanceGrid" class="student-grid"></div>
+            <div id="attendanceEmpty" class="empty-state" style="display:none;">
+                <span class="big-icon">👨‍🎓</span>
+                <p>暂无学生，请先到「学生管理」添加学生。</p>
             </div>
-            <div class="tab-panel" id="panelStats">
-                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#f8fafc;padding:8px 12px;border-radius:12px;margin-bottom:12px;">
-                    <label>开始</label><input type="date" id="statsStart" style="padding:6px;border-radius:8px;border:1px solid #d1d9e6;" />
-                    <label>结束</label><input type="date" id="statsEnd" style="padding:6px;border-radius:8px;border:1px solid #d1d9e6;" />
-                    <button class="btn btn-primary btn-sm" onclick="renderStats()">📊 生成</button>
-                    <button class="btn btn-outline btn-sm" onclick="setThisWeek()">📅 本周</button>
-                    <button class="btn btn-outline btn-sm" onclick="setThisMonth()">📅 本月</button>
+        </div>
+
+        <!-- ===== 学生管理 ===== -->
+        <div class="tab-panel" id="panelManage">
+            <div class="manage-form">
+                <div class="field">
+                    <label for="studentName">姓名</label>
+                    <input type="text" id="studentName" placeholder="请输入学生姓名" />
                 </div>
-                <div class="stats-summary" id="statsSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
-                    <div class="item"><div class="num" id="statsTotalDays">0</div><div class="lbl">统计天数</div></div>
-                    <div class="item"><div class="num" id="statsTotalPresent">0</div><div class="lbl">总出勤</div></div>
-                    <div class="item"><div class="num" id="statsTotalAbsent">0</div><div class="lbl">总缺勤</div></div>
-                    <div class="item"><div class="num" id="statsTotalLeave">0</div><div class="lbl">总请假</div></div>
+                <div class="field">
+                    <label for="studentClass">班级</label>
+                    <input type="text" id="studentClass" placeholder="如：一年级1班" />
                 </div>
-                <div id="statsContent"></div>
+                <button class="btn btn-primary" onclick="addStudentFromForm()">➕ 添加学生</button>
             </div>
+            <div class="import-area">
+                <span class="import-label" style="font-weight:600;font-size:13px;color:#334155;">📤 Excel 导入</span>
+                <button class="btn btn-primary btn-sm" id="importExcelBtn">📂 选择文件</button>
+                <span class="hint">支持 .xlsx / .xls，第一列为姓名，第二列为班级</span>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;" />
+                <div class="import-result" id="importResult"></div>
+            </div>
+            <div id="studentListContainer"></div>
+            <div id="manageEmpty" class="empty-state" style="display:none;">
+                <span class="big-icon">📭</span>
+                <p>还没有学生，快来添加吧！</p>
+            </div>
+        </div>
+
+        <!-- ===== 统计报表 ===== -->
+        <div class="tab-panel" id="panelStats">
+            <div class="stats-toolbar">
+                <div class="field">
+                    <label for="statsStart">开始</label>
+                    <input type="date" id="statsStart" />
+                </div>
+                <div class="field">
+                    <label for="statsEnd">结束</label>
+                    <input type="date" id="statsEnd" />
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="renderStats()">📊 生成报表</button>
+                <button class="btn btn-outline btn-sm" onclick="setThisWeek()">📅 本周</button>
+                <button class="btn btn-outline btn-sm" onclick="setThisMonth()">📅 本月</button>
+            </div>
+            <div class="stats-summary" id="statsSummary">
+                <div class="item"><div class="num" id="statsTotalDays">0</div><div class="lbl">统计天数</div></div>
+                <div class="item"><div class="num" id="statsTotalPresent">0</div><div class="lbl">总出勤人次</div></div>
+                <div class="item"><div class="num" id="statsTotalAbsent">0</div><div class="lbl">总缺勤人次</div></div>
+                <div class="item"><div class="num" id="statsTotalLeave">0</div><div class="lbl">总请假人次</div></div>
+            </div>
+            <div id="statsContent"></div>
         </div>
     </div>
 
-    <!-- 加载占位 -->
-    <div id="loadingBox" class="loading-box">
-        <div class="spinner"></div>
-        <p>⏳ 正在连接云端数据库...</p>
-        <p style="font-size:14px;color:#94a3b8;margin-top:8px;">首次加载可能需要几秒钟</p>
-    </div>
-
-    <!-- Toast & Modal -->
+    <!-- Toast 容器 -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 图片预览模态框 -->
     <div id="imageModal" class="modal-overlay" style="display:none;" onclick="closeImageModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <button class="modal-close" onclick="closeImageModal()">✕</button>
-            <img id="modalImage" src="" alt="图片" />
+            <img id="modalImage" src="" alt="违纪图片" />
         </div>
     </div>
 
     <script>
         // ================================================================
-        //  🔑 Supabase 配置（请替换）
+        //  数据层
         // ================================================================
-npm install @supabase/server
-SUPABASE_URL=https://lbccdnmfgwmwibathfbg.supabase.co
-SUPABASE_PUBLISHABLE_KEY=sb_publishable_nHvMvs3fYb6nyd_5UvjtDw_VvKqc9qf
-SUPABASE_SECRET_KEY=sb_secret_MKw8Mj0pTPBDlnp1kYaCXQ_cLic5Iel
-SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/jwks.json
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         const STORAGE_KEY = 'attendance_system_data';
-
-        // ================================================================
-        //  工具函数
-        // ================================================================
-        function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-
-        function formatDate(d) {
-            const date = d instanceof Date ? d : new Date(d);
-            return date.toISOString().slice(0, 10);
-        }
-
-        function todayStr() { return formatDate(new Date()); }
-
-        function formatDateTime(d) {
-            const date = d instanceof Date ? d : new Date(d);
-            return date.toISOString().slice(0, 16).replace('T', ' ');
-        }
-
-        function getWeekday(dateStr) {
-            const d = new Date(dateStr + 'T00:00:00');
-            return ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
-        }
-
-        function friendlyDate(dateStr) {
-            const d = new Date(dateStr + 'T00:00:00');
-            return `${d.getMonth()+1}月${d.getDate()}日 周${getWeekday(dateStr)}`;
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function showToast(msg, type = 'info', dur = 2200) {
-            const container = document.getElementById('toastContainer');
-            const el = document.createElement('div');
-            el.className = `toast ${type}`;
-            el.textContent = msg;
-            container.appendChild(el);
-            setTimeout(() => {
-                el.style.opacity = '0';
-                el.style.transition = 'opacity 0.3s';
-                setTimeout(() => el.remove(), 300);
-            }, dur);
-        }
-
-        function openImageModal(src) {
-            document.getElementById('modalImage').src = src;
-            document.getElementById('imageModal').style.display = 'flex';
-        }
-
-        function closeImageModal(e) {
-            if (e && e.target !== e.currentTarget) return;
-            document.getElementById('imageModal').style.display = 'none';
-        }
 
         function getDefaultData() {
             return { students: [], records: [], violations: [] };
         }
 
-        // ================================================================
-        //  数据层（云端 + 本地缓存）
-        // ================================================================
-
-        async function loadData() {
-            try {
-                const { data, error } = await supabase
-                    .from('attendance_data')
-                    .select('data')
-                    .eq('id', 1)
-                    .single();
-                if (error) throw error;
-                if (data && data.data) {
-                    const parsed = data.data;
-                    if (!parsed.students) parsed.students = [];
-                    if (!parsed.records) parsed.records = [];
-                    if (!parsed.violations) parsed.violations = [];
-                    parsed.violations = parsed.violations.map(v => {
-                        if (v.resolved === undefined) v.resolved = false;
-                        if (!v.images) v.images = [];
-                        return v;
-                    });
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-                    return parsed;
-                } else {
-                    return loadLocalCache();
-                }
-            } catch (err) {
-                console.warn('云端加载失败，使用本地缓存', err);
-                return loadLocalCache();
-            }
-        }
-
-        function loadLocalCache() {
+        function loadData() {
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
                 if (raw) {
@@ -582,37 +1125,162 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
                     });
                     return parsed;
                 }
-            } catch (e) {}
+            } catch (e) { console.warn('读取数据失败', e); }
             return getDefaultData();
         }
 
-        async function saveData(data) {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                const { error } = await supabase
-                    .from('attendance_data')
-                    .upsert({ id: 1, data: data, updated_at: new Date().toISOString() }, { onConflict: 'id' });
-                if (error) {
-                    console.error('云端保存失败', error);
-                    showToast('⚠️ 云端保存失败，已存本地', 'error');
-                    return false;
-                }
-                return true;
-            } catch (err) {
-                console.error('保存错误', err);
-                showToast('⚠️ 网络错误，已存本地', 'error');
-                return false;
-            }
+        function saveData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function genId() {
+            return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        }
+
+        function formatDateTime(d) {
+            const date = d instanceof Date ? d : new Date(d);
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const h = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            return `${y}-${m}-${day} ${h}:${min}`;
+        }
+
+        function formatDate(d) {
+            const date = d instanceof Date ? d : new Date(d);
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function todayStr() {
+            return formatDate(new Date());
+        }
+
+        function getWeekday(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            return ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
+        }
+
+        let data = loadData();
+
+        // ================================================================
+        //  Toast
+        // ================================================================
+
+        function showToast(message, type = 'info', duration = 2200) {
+            const container = document.getElementById('toastContainer');
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.textContent = message;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.classList.add('toast-out');
+                setTimeout(() => el.remove(), 300);
+            }, duration);
         }
 
         // ================================================================
-        //  全局数据与业务函数（所有修改数据的函数均为 async）
+        //  图片预览
         // ================================================================
 
-        let data = getDefaultData(); // 先占位，初始化时加载
+        function openImageModal(src) {
+            document.getElementById('modalImage').src = src;
+            document.getElementById('imageModal').style.display = 'flex';
+        }
 
-        // 获取学生列表
-        function getStudents() { return [...data.students].sort((a, b) => a.createdAt - b.createdAt); }
+        function closeImageModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        // ================================================================
+        //  🔥 核心新增功能：数据导出与导入
+        // ================================================================
+
+        function exportData() {
+            const currentData = loadData();
+            const totalStudents = currentData.students ? currentData.students.length : 0;
+            if (totalStudents === 0) {
+                showToast('⚠️ 当前没有数据可导出', 'error');
+                return;
+            }
+            const json = JSON.stringify(currentData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `考勤备份_${todayStr()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            const totalRecords = currentData.records ? currentData.records.length : 0;
+            const totalViolations = currentData.violations ? currentData.violations.length : 0;
+            showToast(`✅ 导出成功！包含 ${totalStudents} 名学生、${totalRecords} 条考勤、${totalViolations} 条违纪`, 'success');
+        }
+
+        function importData() {
+            const currentData = loadData();
+            const hasData = currentData.students && currentData.students.length > 0;
+            if (hasData) {
+                if (!confirm('⚠️ 导入将覆盖当前所有数据（学生、考勤、违纪记录），确定继续吗？')) {
+                    return;
+                }
+            }
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast('❌ 文件过大（超过10MB）', 'error');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    try {
+                        const imported = JSON.parse(ev.target.result);
+                        if (typeof imported !== 'object' || !imported.students || !Array.isArray(imported.students)) {
+                            showToast('❌ 文件格式无效：缺少 students 字段', 'error');
+                            return;
+                        }
+                        if (!imported.records || !Array.isArray(imported.records)) {
+                            showToast('❌ 文件格式无效：缺少 records 字段', 'error');
+                            return;
+                        }
+                        if (!imported.violations || !Array.isArray(imported.violations)) {
+                            showToast('❌ 文件格式无效：缺少 violations 字段', 'error');
+                            return;
+                        }
+                        const count = imported.students.length;
+                        if (!confirm(`将恢复 ${count} 名学生及其相关数据，确定继续吗？`)) {
+                            return;
+                        }
+                        data = imported;
+                        saveData(data);
+                        refreshAll();
+                        showToast(`✅ 数据恢复成功！共 ${count} 名学生`, 'success');
+                    } catch (err) {
+                        showToast('❌ 文件解析失败：' + err.message, 'error');
+                        console.error(err);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // ================================================================
+        //  核心业务逻辑（复用之前的代码）
+        // ================================================================
+
+        function getStudents() {
+            return [...data.students].sort((a, b) => a.createdAt - b.createdAt);
+        }
 
         function getAttendanceMap(dateStr) {
             const map = {};
@@ -620,81 +1288,78 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
             return map;
         }
 
-        function getStudentRecords(studentId) { return data.records.filter(r => r.studentId === studentId); }
-
-        function getStudentRecordsInRange(studentId, start, end) {
-            return data.records.filter(r => r.studentId === studentId && r.date >= start && r.date <= end);
+        function getStudentRecords(studentId) {
+            return data.records.filter(r => r.studentId === studentId);
         }
 
-        function getViolations() { return [...data.violations].sort((a, b) => new Date(b.date) - new Date(a.date)); }
+        function getStudentRecordsInRange(studentId, startDate, endDate) {
+            return data.records.filter(r => r.studentId === studentId && r.date >= startDate && r.date <= endDate);
+        }
+
+        function setAttendance(studentId, dateStr, status) {
+            if (!status) {
+                data.records = data.records.filter(r => !(r.studentId === studentId && r.date === dateStr));
+                saveData(data);
+                return;
+            }
+            const existing = data.records.find(r => r.studentId === studentId && r.date === dateStr);
+            if (existing) {
+                existing.status = status;
+            } else {
+                data.records.push({ id: genId(), studentId, date: dateStr, status });
+            }
+            saveData(data);
+        }
+
+        function addStudent(name, className) {
+            if (!name || !name.trim()) return { success: false, message: '姓名不能为空' };
+            const trimmedName = name.trim();
+            const trimmedClass = (className || '未分班').trim() || '未分班';
+            const exist = data.students.some(s => s.name === trimmedName && s.class === trimmedClass);
+            if (exist) return { success: false, message: `学生 "${trimmedName}"（${trimmedClass}）已存在` };
+            data.students.push({ id: genId(), name: trimmedName, class: trimmedClass, createdAt: Date.now() });
+            saveData(data);
+            return { success: true, message: `已添加：${trimmedName}` };
+        }
+
+        function deleteStudent(studentId) {
+            const student = data.students.find(s => s.id === studentId);
+            if (!student) return;
+            if (!confirm(`确定要删除学生 "${student.name}" 吗？`)) return;
+            data.students = data.students.filter(s => s.id !== studentId);
+            data.records = data.records.filter(r => r.studentId !== studentId);
+            data.violations = data.violations.filter(v => v.studentId !== studentId);
+            saveData(data);
+            showToast(`已删除学生：${student.name}`, 'info');
+            refreshAll();
+        }
+
+        function resetAllData() {
+            if (!confirm('⚠️ 确定要清除所有数据吗？此操作不可恢复！')) return;
+            if (!confirm('再次确认：所有数据将被删除！')) return;
+            data = getDefaultData();
+            saveData(data);
+            showToast('已重置所有数据', 'info');
+            refreshAll();
+        }
+
+        // ================================================================
+        //  违纪相关
+        // ================================================================
+
+        function getViolations() {
+            return [...data.violations].sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
 
         function getViolationsByStudent(studentId) {
             return data.violations.filter(v => v.studentId === studentId).sort((a, b) => new Date(b.date) - new Date(a.date));
         }
 
-        // ---- 数据修改函数 ----
-
-        async function setAttendance(studentId, dateStr, status) {
-            if (!status) {
-                data.records = data.records.filter(r => !(r.studentId === studentId && r.date === dateStr));
-            } else {
-                const exist = data.records.find(r => r.studentId === studentId && r.date === dateStr);
-                if (exist) exist.status = status;
-                else data.records.push({ id: genId(), studentId, date: dateStr, status });
-            }
-            await saveData(data);
-        }
-
-        async function addStudent(name, cls) {
-            if (!name || !name.trim()) return { success: false, message: '姓名不能为空' };
-            const trimmedName = name.trim();
-            const trimmedClass = (cls || '未分班').trim() || '未分班';
-            if (data.students.some(s => s.name === trimmedName && s.class === trimmedClass)) {
-                return { success: false, message: `学生已存在` };
-            }
-            data.students.push({ id: genId(), name: trimmedName, class: trimmedClass, createdAt: Date.now() });
-            await saveData(data);
-            return { success: true, message: `已添加：${trimmedName}` };
-        }
-
-        async function deleteStudent(studentId) {
-            const student = data.students.find(s => s.id === studentId);
-            if (!student) return;
-            if (!confirm(`确定删除 ${student.name} 吗？`)) return;
-            data.students = data.students.filter(s => s.id !== studentId);
-            data.records = data.records.filter(r => r.studentId !== studentId);
-            data.violations = data.violations.filter(v => v.studentId !== studentId);
-            await saveData(data);
-            showToast(`已删除 ${student.name}`, 'info');
-            refreshAll();
-        }
-
-        async function resetAllData() {
-            if (!confirm('⚠️ 确定清除所有数据？')) return;
-            data = getDefaultData();
-            await saveData(data);
-            showToast('已重置', 'info');
-            refreshAll();
-        }
-
-        async function syncData() {
-            showToast('🔄 正在同步...', 'info');
-            try {
-                const d = await loadData();
-                data = d;
-                refreshAll();
-                showToast('✅ 同步完成', 'success');
-            } catch (e) {
-                showToast('❌ 同步失败', 'error');
-            }
-        }
-
-        // 违纪相关
-        async function addViolationRecord(studentId, content, resolved, images) {
+        function addViolationRecord(studentId, content, resolved, images) {
             if (!studentId) { showToast('请选择学生', 'error'); return false; }
-            if (!content || !content.trim()) { showToast('请输入内容', 'error'); return false; }
+            if (!content || !content.trim()) { showToast('请输入违纪内容', 'error'); return false; }
             const student = data.students.find(s => s.id === studentId);
-            if (!student) { showToast('学生不存在', 'error'); return false; }
+            if (!student) { showToast('所选学生不存在', 'error'); return false; }
             data.violations.push({
                 id: genId(),
                 studentId,
@@ -703,64 +1368,346 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
                 resolved: !!resolved,
                 images: images || []
             });
-            await saveData(data);
-            showToast(`已记录 ${student.name} 的违纪`, 'success');
+            saveData(data);
+            showToast(`已记录 ${student.name} 的违纪行为`, 'success');
             refreshViolationsUI();
             return true;
         }
 
-        async function deleteViolation(violationId) {
-            if (!confirm('删除这条违纪记录？')) return;
+        function deleteViolation(violationId) {
+            if (!confirm('确定要删除这条违纪记录吗？')) return;
             data.violations = data.violations.filter(v => v.id !== violationId);
-            await saveData(data);
+            saveData(data);
             refreshViolationsUI();
-            showToast('已删除', 'info');
+            showToast('已删除违纪记录', 'info');
         }
 
-        async function toggleResolved(violationId) {
+        function toggleResolved(violationId) {
             const v = data.violations.find(item => item.id === violationId);
             if (!v) return;
             v.resolved = !v.resolved;
-            await saveData(data);
+            saveData(data);
             refreshViolationsUI();
             showToast(v.resolved ? '已标记为已处理' : '已标记为未处理', 'info');
         }
 
-        async function addImagesToViolation(violationId, files) {
+        function addImagesToViolation(violationId, files) {
             const v = data.violations.find(item => item.id === violationId);
             if (!v) { showToast('记录不存在', 'error'); return; }
             if (!files || files.length === 0) return;
+            const readers = [];
             let loaded = 0;
-            for (const file of files) {
-                if (!file.type.startsWith('image/')) continue;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (!file.type.startsWith('image/')) { showToast(`${file.name} 不是图片文件`, 'error'); continue; }
                 const reader = new FileReader();
-                const result = await new Promise((resolve) => {
-                    reader.onload = (e) => resolve(e.target.result);
+                readers.push(new Promise((resolve) => {
+                    reader.onload = function(e) { v.images.push(e.target.result);
+                        loaded++;
+                        resolve(); };
                     reader.readAsDataURL(file);
-                });
-                v.images.push(result);
-                loaded++;
+                }));
             }
-            if (loaded > 0) {
-                await saveData(data);
-                refreshViolationsUI();
-                showToast(`成功添加 ${loaded} 张图片`, 'success');
-            }
+            Promise.all(readers).then(() => {
+                if (loaded > 0) { saveData(data);
+                    refreshViolationsUI();
+                    showToast(`成功添加 ${loaded} 张图片`, 'success'); }
+            }).catch(err => { showToast('图片读取失败', 'error');
+                console.error(err); });
         }
 
-        async function deleteImage(violationId, index) {
+        function deleteImage(violationId, index) {
             const v = data.violations.find(item => item.id === violationId);
             if (!v) return;
-            if (!confirm('删除这张图片？')) return;
+            if (!confirm('确定要删除这张图片吗？')) return;
             v.images.splice(index, 1);
-            await saveData(data);
+            saveData(data);
             refreshViolationsUI();
             showToast('已删除图片', 'info');
         }
 
+        function renderViolationSelect() {
+            const select = document.getElementById('violationStudent');
+            const students = getStudents();
+            select.innerHTML = '<option value="">-- 请选择学生 --</option>';
+            students.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s.id;
+                option.textContent = `${s.name}（${s.class}）`;
+                select.appendChild(option);
+            });
+        }
+
+        function renderArchiveFilter() {
+            const select = document.getElementById('archiveFilter');
+            const students = getStudents();
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">全部学生</option>';
+            students.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s.id;
+                option.textContent = `${s.name}（${s.class}）`;
+                select.appendChild(option);
+            });
+            if (currentVal && students.some(s => s.id === currentVal)) select.value = currentVal;
+            else select.value = '';
+        }
+
+        function highlightText(text, keyword) {
+            if (!keyword || !text) return escapeHtml(text);
+            const escaped = escapeHtml(text);
+            const kw = escapeHtml(keyword);
+            const regex = new RegExp(`(${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return escaped.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderViolationList(filterStudentId, searchKeyword) {
+            const container = document.getElementById('violationList');
+            let violations = getViolations();
+            if (filterStudentId) violations = violations.filter(v => v.studentId === filterStudentId);
+            if (searchKeyword && searchKeyword.trim()) {
+                const kw = searchKeyword.trim().toLowerCase();
+                const students = getStudents();
+                const studentMap = {};
+                students.forEach(s => { studentMap[s.id] = s; });
+                violations = violations.filter(v => {
+                    const student = studentMap[v.studentId];
+                    const name = student ? student.name.toLowerCase() : '';
+                    const cls = student ? student.class.toLowerCase() : '';
+                    const content = v.content.toLowerCase();
+                    return name.includes(kw) || cls.includes(kw) || content.includes(kw);
+                });
+            }
+            if (violations.length === 0) {
+                container.innerHTML = `<div class="violation-empty">📭 暂无匹配的违纪记录</div>`;
+                return;
+            }
+            const students = getStudents();
+            const studentMap = {};
+            students.forEach(s => { studentMap[s.id] = s; });
+            let html = '<div class="violation-list">';
+            violations.forEach(v => {
+                const student = studentMap[v.studentId];
+                const name = student ? student.name : '（已删除）';
+                const cls = student ? student.class : '';
+                const time = formatDateTime(v.date);
+                const displayName = searchKeyword ? highlightText(name, searchKeyword) : escapeHtml(name);
+                const displayCls = searchKeyword && cls ? highlightText(cls, searchKeyword) : escapeHtml(cls);
+                const displayContent = searchKeyword ? highlightText(v.content, searchKeyword) : escapeHtml(v.content);
+                const statusLabel = v.resolved ? '✅ 已处理' : '⏳ 未处理';
+                const statusClass = v.resolved ? 'resolved' : 'unresolved';
+                let imagesHtml = '';
+                if (v.images && v.images.length > 0) {
+                    imagesHtml = '<div class="images">';
+                    v.images.forEach((img, idx) => {
+                        imagesHtml += `
+                            <div class="img-thumb" onclick="openImageModal('${img}')">
+                                <img src="${img}" alt="违纪图片${idx+1}" />
+                                <button class="del-img" onclick="event.stopPropagation();deleteImage('${v.id}', ${idx})">✕</button>
+                            </div>
+                        `;
+                    });
+                    imagesHtml += '</div>';
+                }
+                const uploadId = `upload_${v.id}`;
+                imagesHtml += `
+                    <div class="upload-btn" onclick="document.getElementById('${uploadId}').click()">
+                        📎 添加图片
+                        <input type="file" id="${uploadId}" accept="image/*" multiple 
+                               onchange="document.getElementById('${uploadId}').files && addImagesToViolation('${v.id}', this.files); this.value='';" />
+                    </div>
+                `;
+                html += `
+                    <div class="violation-item">
+                        <div class="row">
+                            <div class="info">
+                                <span class="v-student">${displayName} ${cls ? '· ' + displayCls : ''}</span>
+                                <span class="v-content">${displayContent}</span>
+                                <span class="v-time">${time}</span>
+                            </div>
+                            <div class="actions">
+                                <span class="status-badge ${statusClass}" onclick="toggleResolved('${v.id}')">${statusLabel}</span>
+                                <button class="btn-icon danger" onclick="deleteViolation('${v.id}')">🗑️</button>
+                            </div>
+                        </div>
+                        ${imagesHtml}
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function refreshViolationsUI() {
+            renderViolationSelect();
+            renderArchiveFilter();
+            const filterSelect = document.getElementById('archiveFilter');
+            const filterVal = filterSelect ? filterSelect.value : '';
+            const searchInput = document.getElementById('archiveSearch');
+            const searchVal = searchInput ? searchInput.value : '';
+            renderViolationList(filterVal, searchVal);
+            const titleEl = document.getElementById('archiveTitle');
+            const students = getStudents();
+            let titleText = '';
+            if (filterVal) {
+                const student = students.find(s => s.id === filterVal);
+                titleText = student ? `📄 ${student.name} 的违纪档案` : '显示全部记录';
+            } else {
+                titleText = '显示全部记录';
+            }
+            if (searchVal && searchVal.trim()) titleText += ` · 搜索 "${searchVal.trim()}"`;
+            titleEl.textContent = titleText;
+            const clearBtn = document.getElementById('searchClearBtn');
+            if (searchVal && searchVal.trim()) clearBtn.classList.add('visible');
+            else clearBtn.classList.remove('visible');
+        }
+
+        function onArchiveFilterChange() { refreshViolationsUI(); }
+
+        function onSearchChange() { refreshViolationsUI(); }
+
+        function clearSearch() {
+            document.getElementById('archiveSearch').value = '';
+            refreshViolationsUI();
+        }
+
+        function toggleViolationPanel() {
+            const panel = document.getElementById('violationPanel');
+            const arrow = document.getElementById('violationArrow');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                arrow.classList.add('open');
+                refreshViolationsUI();
+            } else {
+                panel.style.display = 'none';
+                arrow.classList.remove('open');
+            }
+        }
+
+        function addViolation() {
+            const select = document.getElementById('violationStudent');
+            const content = document.getElementById('violationContent');
+            const resolved = document.getElementById('violationResolved').checked;
+            const fileInput = document.getElementById('violationImages');
+            const files = fileInput.files;
+            const studentId = select.value;
+            const text = content.value;
+            if (files && files.length > 0) {
+                const readers = [];
+                const imageData = [];
+                let hasError = false;
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    if (!file.type.startsWith('image/')) { showToast(`${file.name} 不是图片文件`, 'error');
+                        hasError = true; break; }
+                    const reader = new FileReader();
+                    readers.push(new Promise((resolve) => {
+                        reader.onload = function(e) { imageData.push(e.target.result);
+                            resolve(); };
+                        reader.readAsDataURL(file);
+                    }));
+                }
+                if (hasError) return;
+                Promise.all(readers).then(() => {
+                    const success = addViolationRecord(studentId, text, resolved, imageData);
+                    if (success) { content.value = '';
+                        document.getElementById('violationResolved').checked = false;
+                        fileInput.value = ''; }
+                }).catch(err => { showToast('图片读取失败', 'error');
+                    console.error(err); });
+            } else {
+                const success = addViolationRecord(studentId, text, resolved, []);
+                if (success) { content.value = '';
+                    document.getElementById('violationResolved').checked = false;
+                    fileInput.value = ''; }
+            }
+        }
+
+        function refreshViolations() { refreshViolationsUI();
+            showToast('已刷新', 'info'); }
+
+        function viewStudentViolation(studentId) {
+            const panel = document.getElementById('violationPanel');
+            const arrow = document.getElementById('violationArrow');
+            if (panel.style.display === 'none') { panel.style.display = 'block';
+                arrow.classList.add('open'); }
+            const filterSelect = document.getElementById('archiveFilter');
+            if (filterSelect) { filterSelect.value = studentId;
+                document.getElementById('archiveSearch').value = '';
+                onArchiveFilterChange(); }
+            document.querySelector('.violation-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
         // ================================================================
-        //  渲染函数（同步，不修改数据）
+        //  Excel 导入
         // ================================================================
+
+        function importExcel(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const arrayBuffer = e.target.result;
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    let startRow = 0;
+                    if (json.length > 0) {
+                        const firstRow = json[0];
+                        if (firstRow && firstRow.length > 0) {
+                            const firstCell = String(firstRow[0] || '').toLowerCase();
+                            if (firstCell.includes('姓名') || firstCell.includes('名字') || firstCell.includes('学生')) {
+                                startRow = 1;
+                            }
+                        }
+                    }
+                    let added = 0,
+                        skipped = 0;
+                    const students = getStudents();
+                    const existingSet = new Set(students.map(s => `${s.name}|${s.class}`));
+                    for (let i = startRow; i < json.length; i++) {
+                        const row = json[i];
+                        if (!row || row.length === 0) continue;
+                        let name = String(row[0] || '').trim();
+                        if (!name) continue;
+                        let cls = String(row[1] || '').trim() || '未分班';
+                        const key = `${name}|${cls}`;
+                        if (existingSet.has(key)) { skipped++; continue; }
+                        data.students.push({ id: genId(), name, class: cls, createdAt: Date.now() });
+                        existingSet.add(key);
+                        added++;
+                    }
+                    saveData(data);
+                    refreshAll();
+                    document.getElementById('importResult').textContent = `✅ 导入成功：新增 ${added} 名学生，跳过 ${skipped} 名`;
+                    showToast(`导入完成：新增 ${added} 人`, 'success');
+                } catch (err) {
+                    showToast('文件解析失败：' + err.message, 'error');
+                    document.getElementById('importResult').textContent = `❌ 导入失败：${err.message}`;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ================================================================
+        //  渲染层
+        // ================================================================
+
+        function refreshAll() {
+            updateStats();
+            renderAttendance();
+            renderStudentList();
+            renderStats();
+            const panel = document.getElementById('violationPanel');
+            if (panel.style.display !== 'none') refreshViolationsUI();
+            document.getElementById('headerDate').textContent = `📅 ${todayStr()} 周${getWeekday(todayStr())}`;
+        }
 
         function updateStats() {
             const students = getStudents();
@@ -782,60 +1729,66 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
             const students = getStudents();
             const dateStr = document.getElementById('attendanceDate').value || todayStr();
             const map = getAttendanceMap(dateStr);
-
-            const statusEl = document.getElementById('attendanceStatus');
             const markedCount = Object.keys(map).length;
+            const statusEl = document.getElementById('attendanceStatus');
             if (markedCount === 0) {
                 statusEl.textContent = '📌 今日尚未打卡';
                 statusEl.style.color = '#94a3b8';
             } else {
-                const p = Object.values(map).filter(v => v === 'present').length;
-                const a = Object.values(map).filter(v => v === 'absent').length;
-                const l = Object.values(map).filter(v => v === 'leave').length;
-                statusEl.textContent = `✅ ${p} 出勤  ❌ ${a} 缺勤  📋 ${l} 请假  （共 ${markedCount} 人）`;
+                const present = Object.values(map).filter(v => v === 'present').length;
+                const absent = Object.values(map).filter(v => v === 'absent').length;
+                const leave = Object.values(map).filter(v => v === 'leave').length;
+                statusEl.textContent = `✅ ${present} 出勤  ❌ ${absent} 缺勤  📋 ${leave} 请假  （共 ${markedCount} 人）`;
                 statusEl.style.color = '#334155';
             }
-
             if (students.length === 0) { container.innerHTML = '';
                 empty.style.display = 'block'; return; }
             empty.style.display = 'none';
-            container.innerHTML = students.map(s => {
-                const st = map[s.id] || '';
-                return `<div class="student-card">
-                    <div class="info"><span class="name">${escapeHtml(s.name)}</span><span class="class-tag">${escapeHtml(s.class)}</span></div>
-                    <div class="status-btns">
-                        <button class="btn ${st==='present'?'active-present':''}" onclick="setAttendanceStatus('${s.id}','present')">✅</button>
-                        <button class="btn ${st==='absent'?'active-absent':''}" onclick="setAttendanceStatus('${s.id}','absent')">❌</button>
-                        <button class="btn ${st==='leave'?'active-leave':''}" onclick="setAttendanceStatus('${s.id}','leave')">📋</button>
+            let html = '';
+            students.forEach(student => {
+                const status = map[student.id] || '';
+                const isPresent = status === 'present';
+                const isAbsent = status === 'absent';
+                const isLeave = status === 'leave';
+                html += `
+                    <div class="student-card">
+                        <div class="info">
+                            <span class="name">${escapeHtml(student.name)}</span>
+                            <span class="class-tag">${escapeHtml(student.class)}</span>
+                        </div>
+                        <div class="status-btns">
+                            <button class="btn ${isPresent ? 'active-present' : ''}" onclick="setAttendanceStatus('${student.id}','present')">✅ 出勤</button>
+                            <button class="btn ${isAbsent ? 'active-absent' : ''}" onclick="setAttendanceStatus('${student.id}','absent')">❌ 缺勤</button>
+                            <button class="btn ${isLeave ? 'active-leave' : ''}" onclick="setAttendanceStatus('${student.id}','leave')">📋 请假</button>
+                        </div>
                     </div>
-                </div>`;
-            }).join('');
+                `;
+            });
+            container.innerHTML = html;
         }
 
-        async function setAttendanceStatus(studentId, status) {
+        function setAttendanceStatus(studentId, status) {
             const dateStr = document.getElementById('attendanceDate').value || todayStr();
             const student = data.students.find(s => s.id === studentId);
             if (!student) return;
             const map = getAttendanceMap(dateStr);
             if (map[studentId] === status) {
-                await setAttendance(studentId, dateStr, null);
+                setAttendance(studentId, dateStr, null);
                 showToast(`已取消 ${student.name} 的标记`, 'info');
             } else {
-                await setAttendance(studentId, dateStr, status);
+                setAttendance(studentId, dateStr, status);
                 const statusMap = { present: '出勤', absent: '缺勤', leave: '请假' };
                 showToast(`${student.name}：${statusMap[status]} ✅`, 'success');
             }
             refreshAll();
         }
 
-        async function markAllPresent() {
+        function markAllPresent() {
             const students = getStudents();
             if (students.length === 0) { showToast('暂无学生', 'error'); return; }
             const dateStr = document.getElementById('attendanceDate').value || todayStr();
-            for (const s of students) {
-                await setAttendance(s.id, dateStr, 'present');
-            }
-            showToast(`✅ 已标记 ${students.length} 人出勤`, 'success');
+            students.forEach(s => setAttendance(s.id, dateStr, 'present'));
+            showToast(`✅ 已标记 ${students.length} 名学生全部出勤`, 'success');
             refreshAll();
         }
 
@@ -849,218 +1802,36 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
             if (students.length === 0) { container.innerHTML = '';
                 empty.style.display = 'block'; return; }
             empty.style.display = 'none';
-            container.innerHTML = `<div class="student-list">` + students.map(s => {
+            let html = '<div class="student-list">';
+            students.forEach(s => {
                 const recordCount = getStudentRecords(s.id).length;
-                const vCount = getViolationsByStudent(s.id).length;
-                return `<div class="student-list-item" style="display:flex;justify-content:space-between;padding:8px 12px;border:1px solid #e9edf2;border-radius:8px;margin-bottom:6px;">
-                    <div class="info" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-                        <span class="name">${escapeHtml(s.name)}</span>
-                        <span class="class-badge" style="background:#e9edf2;padding:2px 10px;border-radius:40px;font-size:12px;">${escapeHtml(s.class)}</span>
-                        <span class="meta" style="font-size:12px;color:#94a3b8;">📊 ${recordCount} 考勤 · 📋 ${vCount} 违纪</span>
-                    </div>
-                    <div class="actions" style="display:flex;gap:4px;">
-                        <button class="btn-archive" style="background:transparent;border:1px solid #d1d9e6;border-radius:6px;padding:2px 10px;cursor:pointer;" onclick="viewStudentViolation('${s.id}')">📋 档案</button>
-                        <button class="btn btn-danger btn-xs" onclick="deleteStudent('${s.id}')">🗑️</button>
-                    </div>
-                </div>`;
-            }).join('') + `</div>`;
-        }
-
-        async function addStudentFromForm() {
-            const name = document.getElementById('studentName').value;
-            const cls = document.getElementById('studentClass').value;
-            const result = await addStudent(name, cls);
-            if (result.success) {
-                document.getElementById('studentName').value = '';
-                document.getElementById('studentClass').value = '';
-                showToast(result.message, 'success');
-                refreshAll();
-            } else {
-                showToast(result.message, 'error');
-            }
-        }
-
-        // 违纪 UI
-        function renderViolationSelect() {
-            const select = document.getElementById('violationStudent');
-            const students = getStudents();
-            select.innerHTML = '<option value="">-- 请选择 --</option>' + students.map(s =>
-                `<option value="${s.id}">${escapeHtml(s.name)}（${escapeHtml(s.class)}）</option>`
-            ).join('');
-        }
-
-        function renderArchiveFilter() {
-            const select = document.getElementById('archiveFilter');
-            const students = getStudents();
-            const current = select.value;
-            select.innerHTML = '<option value="">全部学生</option>' + students.map(s =>
-                `<option value="${s.id}">${escapeHtml(s.name)}（${escapeHtml(s.class)}）</option>`
-            ).join('');
-            if (current && students.some(s => s.id === current)) select.value = current;
-            else select.value = '';
-        }
-
-        function highlightText(text, keyword) {
-            if (!keyword || !text) return escapeHtml(text);
-            const kw = escapeHtml(keyword);
-            return escapeHtml(text).replace(new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '<span class="highlight" style="background:#fef08a;padding:0 2px;">$&</span>');
-        }
-
-        function renderViolationList(filterStudentId, searchKeyword) {
-            const container = document.getElementById('violationList');
-            let list = getViolations();
-            if (filterStudentId) list = list.filter(v => v.studentId === filterStudentId);
-            if (searchKeyword && searchKeyword.trim()) {
-                const kw = searchKeyword.trim().toLowerCase();
-                const students = getStudents();
-                const map = {};
-                students.forEach(s => map[s.id] = s);
-                list = list.filter(v => {
-                    const s = map[v.studentId];
-                    const name = s ? s.name.toLowerCase() : '';
-                    const cls = s ? s.class.toLowerCase() : '';
-                    const content = v.content.toLowerCase();
-                    return name.includes(kw) || cls.includes(kw) || content.includes(kw);
-                });
-            }
-            if (list.length === 0) {
-                container.innerHTML = `<div class="violation-empty">📭 暂无记录</div>`;
-                return;
-            }
-            const students = getStudents();
-            const studentMap = {};
-            students.forEach(s => studentMap[s.id] = s);
-
-            container.innerHTML = list.map(v => {
-                const s = studentMap[v.studentId];
-                const name = s ? s.name : '（已删除）';
-                const cls = s ? s.class : '';
-                const time = formatDateTime(v.date);
-                const displayName = searchKeyword ? highlightText(name, searchKeyword) : escapeHtml(name);
-                const displayCls = searchKeyword && cls ? highlightText(cls, searchKeyword) : escapeHtml(cls);
-                const displayContent = searchKeyword ? highlightText(v.content, searchKeyword) : escapeHtml(v.content);
-                const statusLabel = v.resolved ? '✅ 已处理' : '⏳ 未处理';
-                const statusClass = v.resolved ? 'resolved' : 'unresolved';
-                let imagesHtml = '';
-                if (v.images && v.images.length) {
-                    imagesHtml = '<div class="images">' + v.images.map((img, idx) =>
-                        `<div class="img-thumb" onclick="openImageModal('${img}')">
-                            <img src="${img}" />
-                            <button class="del-img" onclick="event.stopPropagation();deleteImage('${v.id}',${idx})">✕</button>
-                        </div>`
-                    ).join('') + '</div>';
-                }
-                const uploadId = `upload_${v.id}`;
-                imagesHtml += `<div class="upload-btn" onclick="document.getElementById('${uploadId}').click()">📎 添加图片
-                    <input type="file" id="${uploadId}" accept="image/*" multiple 
-                        onchange="document.getElementById('${uploadId}').files && addImagesToViolation('${v.id}', this.files); this.value='';" />
-                </div>`;
-                return `<div class="violation-item">
-                    <div class="row">
+                const violationCount = getViolationsByStudent(s.id).length;
+                html += `
+                    <div class="student-list-item">
                         <div class="info">
-                            <span class="v-student">${displayName} ${cls ? '· ' + displayCls : ''}</span>
-                            <span class="v-content">${displayContent}</span>
-                            <span class="v-time">${time}</span>
+                            <span class="name">${escapeHtml(s.name)}</span>
+                            <span class="class-badge">${escapeHtml(s.class)}</span>
+                            <span class="meta">📊 ${recordCount} 条考勤 · 📋 ${violationCount} 次违纪</span>
                         </div>
                         <div class="actions">
-                            <span class="status-badge ${statusClass}" onclick="toggleResolved('${v.id}')">${statusLabel}</span>
-                            <button class="btn-icon" onclick="deleteViolation('${v.id}')" style="background:transparent;border:none;font-size:18px;cursor:pointer;">🗑️</button>
+                            <button class="btn-archive" onclick="viewStudentViolation('${s.id}')">📋 档案</button>
+                            <button class="btn btn-danger btn-xs" onclick="deleteStudent('${s.id}')">🗑️ 删除</button>
                         </div>
                     </div>
-                    ${imagesHtml}
-                </div>`;
-            }).join('');
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
         }
 
-        function refreshViolationsUI() {
-            renderViolationSelect();
-            renderArchiveFilter();
-            const filterVal = document.getElementById('archiveFilter').value;
-            const searchVal = document.getElementById('archiveSearch').value;
-            renderViolationList(filterVal, searchVal);
-            const titleEl = document.getElementById('archiveTitle');
-            let titleText = filterVal ? (getStudents().find(s => s.id === filterVal)?.name || '') + ' 的违纪档案' : '显示全部记录';
-            if (searchVal.trim()) titleText += ` · 搜索 "${searchVal.trim()}"`;
-            titleEl.textContent = titleText;
-            document.getElementById('searchClearBtn').style.display = searchVal.trim() ? 'block' : 'none';
-        }
-
-        function onArchiveFilterChange() { refreshViolationsUI(); }
-
-        function onSearchChange() { refreshViolationsUI(); }
-
-        function clearSearch() {
-            document.getElementById('archiveSearch').value = '';
-            refreshViolationsUI();
-        }
-
-        function toggleViolationPanel() {
-            const panel = document.getElementById('violationPanel');
-            const arrow = document.getElementById('violationArrow');
-            if (panel.style.display === 'none') {
-                panel.style.display = 'block';
-                arrow.textContent = '▼';
-                refreshViolationsUI();
-            } else {
-                panel.style.display = 'none';
-                arrow.textContent = '▶';
-            }
-        }
-
-        function addViolation() {
-            const studentId = document.getElementById('violationStudent').value;
-            const content = document.getElementById('violationContent').value;
-            const resolved = document.getElementById('violationResolved').checked;
-            const files = document.getElementById('violationImages').files;
-            if (files && files.length > 0) {
-                const readers = [];
-                const imageData = [];
-                let hasError = false;
-                for (const file of files) {
-                    if (!file.type.startsWith('image/')) { showToast(`${file.name} 不是图片`, 'error');
-                        hasError = true; break; }
-                    const reader = new FileReader();
-                    readers.push(new Promise((resolve) => {
-                        reader.onload = e => { imageData.push(e.target.result);
-                            resolve(); };
-                        reader.readAsDataURL(file);
-                    }));
-                }
-                if (hasError) return;
-                Promise.all(readers).then(async () => {
-                    const success = await addViolationRecord(studentId, content, resolved, imageData);
-                    if (success) {
-                        document.getElementById('violationContent').value = '';
-                        document.getElementById('violationResolved').checked = false;
-                        document.getElementById('violationImages').value = '';
-                    }
-                }).catch(e => { showToast('图片读取失败', 'error');
-                    console.error(e); });
-            } else {
-                addViolationRecord(studentId, content, resolved, []).then(success => {
-                    if (success) {
-                        document.getElementById('violationContent').value = '';
-                        document.getElementById('violationResolved').checked = false;
-                        document.getElementById('violationImages').value = '';
-                    }
-                });
-            }
-        }
-
-        function refreshViolations() { refreshViolationsUI();
-            showToast('已刷新', 'info'); }
-
-        function viewStudentViolation(studentId) {
-            const panel = document.getElementById('violationPanel');
-            const arrow = document.getElementById('violationArrow');
-            if (panel.style.display === 'none') {
-                panel.style.display = 'block';
-                arrow.textContent = '▼';
-            }
-            document.getElementById('archiveFilter').value = studentId;
-            document.getElementById('archiveSearch').value = '';
-            onArchiveFilterChange();
-            document.querySelector('.violation-section').scrollIntoView({ behavior: 'smooth' });
+        function addStudentFromForm() {
+            const nameInput = document.getElementById('studentName');
+            const classInput = document.getElementById('studentClass');
+            const result = addStudent(nameInput.value, classInput.value);
+            if (result.success) { nameInput.value = '';
+                classInput.value = '';
+                showToast(result.message, 'success');
+                refreshAll(); } else { showToast(result.message, 'error'); }
         }
 
         // ================================================================
@@ -1068,95 +1839,76 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
         // ================================================================
 
         function renderStats() {
-            const start = document.getElementById('statsStart').value;
-            const end = document.getElementById('statsEnd').value;
+            const startInput = document.getElementById('statsStart');
+            const endInput = document.getElementById('statsEnd');
+            let start = startInput.value;
+            let end = endInput.value;
             if (!start || !end) {
                 const today = new Date();
-                const sevenAgo = new Date(today);
-                sevenAgo.setDate(today.getDate() - 6);
-                document.getElementById('statsStart').value = formatDate(sevenAgo);
-                document.getElementById('statsEnd').value = formatDate(today);
-                return renderStats();
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(today.getDate() - 6);
+                start = formatDate(sevenDaysAgo);
+                end = formatDate(today);
+                startInput.value = start;
+                endInput.value = end;
             }
             const students = getStudents();
             if (students.length === 0) {
-                document.getElementById('statsContent').innerHTML =
-                    `<div class="empty-stats">📭 暂无学生</div>`;
+                document.getElementById('statsContent').innerHTML = `<div class="empty-stats"><span class="big-icon">📭</span><p>暂无学生数据</p></div>`;
                 document.getElementById('statsSummary').innerHTML =
-                    `<div class="item"><div class="num">0</div><div class="lbl">统计天数</div></div>
-                     <div class="item"><div class="num">0</div><div class="lbl">总出勤</div></div>
-                     <div class="item"><div class="num">0</div><div class="lbl">总缺勤</div></div>
-                     <div class="item"><div class="num">0</div><div class="lbl">总请假</div></div>`;
+                    `<div class="item"><div class="num">0</div><div class="lbl">统计天数</div></div><div class="item"><div class="num">0</div><div class="lbl">总出勤</div></div><div class="item"><div class="num">0</div><div class="lbl">总缺勤</div></div><div class="item"><div class="num">0</div><div class="lbl">总请假</div></div>`;
                 return;
             }
             const dates = [];
-            let cur = new Date(start + 'T00:00:00');
+            let current = new Date(start + 'T00:00:00');
             const endDate = new Date(end + 'T00:00:00');
-            while (cur <= endDate) { dates.push(formatDate(cur));
-                cur.setDate(cur.getDate() + 1); }
+            while (current <= endDate) { dates.push(formatDate(current));
+                current.setDate(current.getDate() + 1); }
             if (dates.length === 0) {
-                document.getElementById('statsContent').innerHTML =
-                    `<div class="empty-stats">📅 请选择有效日期</div>`;
+                document.getElementById('statsContent').innerHTML = `<div class="empty-stats"><span class="big-icon">📅</span><p>请选择有效日期范围</p></div>`;
                 return;
             }
-            const studentStats = students.map(s => {
-                const recs = getStudentRecordsInRange(s.id, start, end);
-                const present = recs.filter(r => r.status === 'present').length;
-                const absent = recs.filter(r => r.status === 'absent').length;
-                const leave = recs.filter(r => r.status === 'leave').length;
+            const studentStats = students.map(student => {
+                const records = getStudentRecordsInRange(student.id, start, end);
+                const present = records.filter(r => r.status === 'present').length;
+                const absent = records.filter(r => r.status === 'absent').length;
+                const leave = records.filter(r => r.status === 'leave').length;
                 const total = dates.length;
                 const rate = total > 0 ? Math.round((present / total) * 100) : 0;
-                return { student: s, present, absent, leave, total, rate };
+                return { student, present, absent, leave, total, rate };
             });
-            const totalPresent = studentStats.reduce((s, v) => s + v.present, 0);
-            const totalAbsent = studentStats.reduce((s, v) => s + v.absent, 0);
-            const totalLeave = studentStats.reduce((s, v) => s + v.leave, 0);
+            const totalPresent = studentStats.reduce((sum, s) => sum + s.present, 0);
+            const totalAbsent = studentStats.reduce((sum, s) => sum + s.absent, 0);
+            const totalLeave = studentStats.reduce((sum, s) => sum + s.leave, 0);
             document.getElementById('statsTotalDays').textContent = dates.length;
             document.getElementById('statsTotalPresent').textContent = totalPresent;
             document.getElementById('statsTotalAbsent').textContent = totalAbsent;
             document.getElementById('statsTotalLeave').textContent = totalLeave;
-
-            const dailyStats = dates.map(d => {
-                const map = getAttendanceMap(d);
-                const p = Object.values(map).filter(v => v === 'present').length;
-                const a = Object.values(map).filter(v => v === 'absent').length;
-                const l = Object.values(map).filter(v => v === 'leave').length;
-                return { date: d, present: p, absent: a, leave: l, total: Object.keys(map).length };
+            const dailyStats = dates.map(date => {
+                const map = getAttendanceMap(date);
+                const present = Object.values(map).filter(v => v === 'present').length;
+                const absent = Object.values(map).filter(v => v === 'absent').length;
+                const leave = Object.values(map).filter(v => v === 'leave').length;
+                const total = Object.keys(map).length;
+                return { date, present, absent, leave, total };
             });
-
-            let html = `<div style="margin-bottom:12px;font-weight:600;">📋 考勤明细（${dates.length} 天）</div>
-            <div class="stats-table-wrap" style="overflow-x:auto;border:1px solid #e9edf2;border-radius:8px;">
-            <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:400px;">
-            <thead><tr style="background:#f1f5f9;">
-                <th style="padding:8px 12px;text-align:left;">姓名</th><th>班级</th><th>✅ 出勤</th><th>❌ 缺勤</th><th>📋 请假</th><th>📊 出勤率</th>
-            </tr></thead><tbody>`;
+            let html = `<div style="margin-bottom:16px;font-weight:600;font-size:15px;color:#0f172a;">📋 考勤明细（${dates.length} 天）</div>
+                <div class="stats-table-wrap"><table class="stats-table"><thead><tr><th>姓名</th><th>班级</th><th>✅ 出勤</th><th>❌ 缺勤</th><th>📋 请假</th><th>📊 出勤率</th></tr></thead><tbody>`;
             studentStats.forEach(s => {
-                const cls = s.rate >= 80 ? 'high' : (s.rate >= 50 ? 'mid' : 'low');
-                html += `<tr>
-                    <td><strong>${escapeHtml(s.student.name)}</strong></td>
-                    <td>${escapeHtml(s.student.class)}</td>
-                    <td style="color:#16a34a;">${s.present}</td>
-                    <td style="color:#dc2626;">${s.absent}</td>
-                    <td style="color:#ea580c;">${s.leave}</td>
-                    <td><div style="display:inline-block;width:60px;height:6px;background:#e2e8f0;border-radius:40px;overflow:hidden;vertical-align:middle;margin-right:6px;"><div style="height:100%;width:${s.rate}%;background:${s.rate>=80?'#16a34a':s.rate>=50?'#ea580c':'#dc2626'};border-radius:40px;"></div></div> ${s.rate}%</td>
-                </tr>`;
+                const rateClass = s.rate >= 80 ? 'high' : (s.rate >= 50 ? 'mid' : 'low');
+                html += `<tr><td><strong>${escapeHtml(s.student.name)}</strong></td><td>${escapeHtml(s.student.class)}</td>
+                        <td style="color:#16a34a;font-weight:600;">${s.present}</td><td style="color:#dc2626;">${s.absent}</td>
+                        <td style="color:#ea580c;">${s.leave}</td>
+                        <td><div class="rate-bar"><div class="fill ${rateClass}" style="width:${s.rate}%;"></div></div>${s.rate}%</td></tr>`;
             });
             html += `</tbody></table></div>`;
-
-            html += `<div style="margin:16px 0 8px;font-weight:600;">📅 每日考勤汇总</div>
-            <div class="stats-table-wrap" style="overflow-x:auto;border:1px solid #e9edf2;border-radius:8px;">
-            <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:400px;">
-            <thead><tr style="background:#f1f5f9;">
-                <th style="padding:8px 12px;text-align:left;">日期</th><th>✅ 出勤</th><th>❌ 缺勤</th><th>📋 请假</th><th>📊 已打卡/总人数</th>
-            </tr></thead><tbody>`;
+            html += `<div style="margin:20px 0 12px;font-weight:600;font-size:15px;color:#0f172a;">📅 每日考勤汇总</div>
+                <div class="stats-table-wrap"><table class="stats-table"><thead><tr><th>日期</th><th>✅ 出勤</th><th>❌ 缺勤</th><th>📋 请假</th><th>📊 已打卡/总人数</th></tr></thead><tbody>`;
             dailyStats.forEach(d => {
-                html += `<tr>
-                    <td>${friendlyDate(d.date)}</td>
-                    <td style="color:#16a34a;">${d.present}</td>
-                    <td style="color:#dc2626;">${d.absent}</td>
-                    <td style="color:#ea580c;">${d.leave}</td>
-                    <td>${d.total} / ${students.length}</td>
-                </tr>`;
+                const totalStudents = students.length;
+                html += `<tr><td>${friendlyDate(d.date)}</td><td style="color:#16a34a;font-weight:600;">${d.present}</td>
+                        <td style="color:#dc2626;">${d.absent}</td><td style="color:#ea580c;">${d.leave}</td>
+                        <td>${d.total} / ${totalStudents}</td></tr>`;
             });
             html += `</tbody></table></div>`;
             document.getElementById('statsContent').innerHTML = html;
@@ -1166,12 +1918,12 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
             const today = new Date();
             const day = today.getDay();
             const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-            const mon = new Date(today);
-            mon.setDate(diff);
-            const sun = new Date(mon);
-            sun.setDate(mon.getDate() + 6);
-            document.getElementById('statsStart').value = formatDate(mon);
-            document.getElementById('statsEnd').value = formatDate(sun);
+            const monday = new Date(today);
+            monday.setDate(diff);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            document.getElementById('statsStart').value = formatDate(monday);
+            document.getElementById('statsEnd').value = formatDate(sunday);
             renderStats();
         }
 
@@ -1185,54 +1937,7 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
         }
 
         // ================================================================
-        //  刷新所有
-        // ================================================================
-
-        function refreshAll() {
-            updateStats();
-            renderAttendance();
-            renderStudentList();
-            renderStats();
-            const panel = document.getElementById('violationPanel');
-            if (panel.style.display !== 'none') refreshViolationsUI();
-            document.getElementById('headerDate').textContent = `📅 ${todayStr()} 周${getWeekday(todayStr())}`;
-        }
-
-        // ================================================================
-        //  初始化
-        // ================================================================
-
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                data = await loadData();
-                // 设置默认日期
-                const today = todayStr();
-                document.getElementById('attendanceDate').value = today;
-                const d = new Date();
-                const sevenAgo = new Date(d);
-                sevenAgo.setDate(d.getDate() - 6);
-                document.getElementById('statsStart').value = formatDate(sevenAgo);
-                document.getElementById('statsEnd').value = formatDate(d);
-                // 隐藏加载，显示应用
-                document.getElementById('loadingBox').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-                refreshAll();
-                showToast('✅ 数据加载成功', 'success');
-            } catch (err) {
-                document.getElementById('loadingBox').innerHTML =
-                    `<p style="color:#dc2626;">❌ 加载失败：${err.message}</p>
-                     <p style="font-size:14px;margin-top:8px;">请检查 Supabase 配置或网络，<br>数据已从本地缓存恢复</p>
-                     <button class="btn btn-primary" style="margin-top:12px;" onclick="location.reload()">🔄 重试</button>`;
-                // 尝试从本地缓存恢复
-                data = loadLocalCache();
-                document.getElementById('app').style.display = 'block';
-                refreshAll();
-                console.error(err);
-            }
-        });
-
-        // ================================================================
-        //  Tab 切换
+        //  初始化与事件绑定
         // ================================================================
 
         document.getElementById('tabNav').addEventListener('click', function(e) {
@@ -1246,12 +1951,9 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
             if (tab === 'stats') renderStats();
             if (tab === 'attendance') { updateStats();
                 renderAttendance(); }
-            if (tab === 'manage') renderStudentList();
+            if (tab === 'manage') { renderStudentList();
+                document.getElementById('importResult').textContent = ''; }
         });
-
-        // ================================================================
-        //  事件绑定
-        // ================================================================
 
         document.getElementById('violationContent').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') { e.preventDefault();
@@ -1272,14 +1974,13 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
         });
         document.getElementById('statsStart').addEventListener('change', renderStats);
         document.getElementById('statsEnd').addEventListener('change', renderStats);
-
-        document.getElementById('importExcelBtn').addEventListener('click', function() {
-            document.getElementById('fileInput').click();
-        });
+        document.getElementById('importExcelBtn').addEventListener('click', function() { document.getElementById('fileInput')
+                .click(); });
         document.getElementById('fileInput').addEventListener('change', function(e) {
             if (this.files && this.files.length > 0) {
                 if (typeof XLSX === 'undefined') {
-                    showToast('Excel 库未加载', 'error');
+                    showToast('Excel 解析库未加载，请刷新页面', 'error');
+                    document.getElementById('importResult').textContent = '❌ 解析库未加载';
                     this.value = '';
                     return;
                 }
@@ -1288,50 +1989,21 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
             }
         });
 
-        function importExcel(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const workbook = XLSX.read(e.target.result, { type: 'array' });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    let start = 0;
-                    if (json.length && json[0] && json[0].length) {
-                        const first = String(json[0][0] || '').toLowerCase();
-                        if (first.includes('姓名') || first.includes('名字')) start = 1;
-                    }
-                    let added = 0,
-                        skipped = 0;
-                    const existing = new Set(getStudents().map(s => `${s.name}|${s.class}`));
-                    for (let i = start; i < json.length; i++) {
-                        const row = json[i];
-                        if (!row || !row[0]) continue;
-                        const name = String(row[0]).trim();
-                        if (!name) continue;
-                        const cls = String(row[1] || '未分班').trim() || '未分班';
-                        const key = `${name}|${cls}`;
-                        if (existing.has(key)) { skipped++; continue; }
-                        data.students.push({ id: genId(), name, class: cls, createdAt: Date.now() });
-                        existing.add(key);
-                        added++;
-                    }
-                    saveData(data).then(() => {
-                        refreshAll();
-                        document.getElementById('importResult').textContent =
-                            `✅ 新增 ${added} 人，跳过 ${skipped} 人`;
-                        showToast(`导入完成：新增 ${added} 人`, 'success');
-                    });
-                } catch (err) {
-                    showToast('导入失败：' + err.message, 'error');
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
+        (function init() {
+            const today = todayStr();
+            document.getElementById('attendanceDate').value = today;
+            document.getElementById('headerDate').textContent = `📅 ${today} 周${getWeekday(today)}`;
+            const d = new Date();
+            const sevenAgo = new Date(d);
+            sevenAgo.setDate(d.getDate() - 6);
+            document.getElementById('statsStart').value = formatDate(sevenAgo);
+            document.getElementById('statsEnd').value = formatDate(d);
+            refreshAll();
+        })();
 
-        // ================================================================
-        //  暴露全局函数
-        // ================================================================
-
+        // 暴露全局方法
+        window.exportData = exportData;
+        window.importData = importData;
         window.addStudentFromForm = addStudentFromForm;
         window.deleteStudent = deleteStudent;
         window.setAttendanceStatus = setAttendanceStatus;
@@ -1341,7 +2013,7 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
         window.setThisWeek = setThisWeek;
         window.setThisMonth = setThisMonth;
         window.resetAllData = resetAllData;
-        window.syncData = syncData;
+        window.refreshAll = refreshAll;
         window.toggleViolationPanel = toggleViolationPanel;
         window.addViolation = addViolation;
         window.deleteViolation = deleteViolation;
@@ -1355,8 +2027,6 @@ SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/j
         window.deleteImage = deleteImage;
         window.openImageModal = openImageModal;
         window.closeImageModal = closeImageModal;
-        window.refreshAll = refreshAll;
-        window.importExcel = importExcel;
     </script>
 </body>
 </html>
