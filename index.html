@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>📚 学生考勤管理系统（含备份功能）</title>
+    <title>📚 学生考勤管理系统（多字段排序）</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
     </script>
     <style>
-        /* ========== 此处省略完整样式（篇幅原因，使用之前版本的完整样式） ========== */
-        /* 您可以直接使用之前对话中最后一次的完整样式代码 */
-        /* 为节省篇幅，我在此只展示核心修改部分，实际使用时请保留完整样式 */
+        /* ===== 基础样式（沿用之前的完整样式，此处只列关键改动） ===== */
         * {
             margin: 0;
             padding: 0;
@@ -48,13 +46,14 @@
                 padding: 20px;
             }
         }
-        /* ===== 头部样式（添加了导出导入按钮） ===== */
+
+        /* ===== 头部（略，与之前相同） ===== */
         .app-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 8px;
             padding-bottom: 16px;
             border-bottom: 2px solid #eef2f6;
             margin-bottom: 16px;
@@ -90,15 +89,15 @@
         }
         .header-actions {
             display: flex;
-            gap: 6px;
+            gap: 4px;
             align-items: center;
             flex-wrap: wrap;
         }
         .header-date {
-            font-size: 12px;
+            font-size: 11px;
             color: #64748b;
             background: #f1f5f9;
-            padding: 4px 12px;
+            padding: 4px 10px;
             border-radius: 40px;
             font-weight: 500;
             white-space: nowrap;
@@ -109,6 +108,8 @@
                 padding: 6px 16px;
             }
         }
+
+        /* ===== 通用按钮 ===== */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -138,6 +139,27 @@
                 min-width: 44px;
             }
         }
+        .btn-primary {
+            background: #2563eb;
+            color: #fff;
+        }
+        .btn-primary:active {
+            background: #1d4ed8;
+        }
+        .btn-success {
+            background: #16a34a;
+            color: #fff;
+        }
+        .btn-success:active {
+            background: #15803d;
+        }
+        .btn-danger {
+            background: #dc2626;
+            color: #fff;
+        }
+        .btn-danger:active {
+            background: #b91c1c;
+        }
         .btn-outline {
             background: transparent;
             border: 1.5px solid #d1d9e6;
@@ -148,7 +170,7 @@
         }
         .btn-sm {
             padding: 4px 10px;
-            font-size: 12px;
+            font-size: 11px;
             border-radius: 6px;
             min-height: 28px;
             min-width: 28px;
@@ -161,14 +183,64 @@
                 min-width: 32px;
             }
         }
-        /* ===== 其他样式（考勤、违纪、统计等）请使用之前完整版本 ===== */
-        /* 由于篇幅原因，这里省略了完整的样式，实际部署时请使用最后一次对话中的完整 CSS */
-        /* 以下是临时占位样式，保证基础可用 */
+        .btn-xs {
+            padding: 2px 8px;
+            font-size: 11px;
+            border-radius: 6px;
+            min-height: 26px;
+            min-width: 26px;
+        }
+
+        /* ===== 排序按钮样式 ===== */
+        .btn-sort {
+            background: transparent;
+            border: none;
+            font-weight: 700;
+            color: #475569;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            touch-action: manipulation;
+            min-height: 28px;
+            min-width: 28px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-sort:active {
+            background: #e9edf2;
+        }
+        .btn-sort .arrow {
+            font-size: 12px;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+        .btn-sort .arrow.desc {
+            transform: rotate(180deg);
+        }
+        .btn-sort.active {
+            color: #2563eb;
+        }
+
+        /* ===== 统计卡片（略） ===== */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin-bottom: 16px;
+        }
+        @media (min-width: 480px) {
+            .stats-row {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 12px;
+            }
+        }
+        @media (min-width: 640px) {
+            .stats-row {
+                gap: 16px;
+                margin-bottom: 20px;
+            }
         }
         .stat-card {
             background: #f8fafc;
@@ -179,16 +251,36 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            min-height: 72px;
         }
         .stat-card .number {
             font-size: 22px;
             font-weight: 700;
             color: #0f172a;
+            line-height: 1.2;
         }
         .stat-card .label {
             font-size: 11px;
             color: #64748b;
             margin-top: 2px;
+            font-weight: 500;
+        }
+        @media (min-width: 480px) {
+            .stat-card .number {
+                font-size: 26px;
+            }
+            .stat-card .label {
+                font-size: 13px;
+            }
+        }
+        @media (min-width: 640px) {
+            .stat-card {
+                padding: 16px 18px;
+                min-height: 88px;
+            }
+            .stat-card .number {
+                font-size: 28px;
+            }
         }
         .stat-card.accent .number {
             color: #2563eb;
@@ -202,182 +294,8 @@
         .stat-card.purple .number {
             color: #7c3aed;
         }
-        .tabs {
-            display: flex;
-            gap: 3px;
-            background: #f1f5f9;
-            border-radius: 12px;
-            padding: 3px;
-            margin-bottom: 16px;
-            overflow-x: auto;
-        }
-        .tab-btn {
-            flex: 1;
-            min-width: 70px;
-            padding: 8px 10px;
-            border: none;
-            background: transparent;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #64748b;
-            cursor: pointer;
-            transition: 0.25s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            min-height: 40px;
-            white-space: nowrap;
-        }
-        .tab-btn.active {
-            background: #ffffff;
-            color: #2563eb;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.10);
-        }
-        .tab-panel {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        .tab-panel.active {
-            display: block;
-        }
-        .toast-container {
-            position: fixed;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 999;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            width: 90%;
-            max-width: 400px;
-            pointer-events: none;
-        }
-        .toast {
-            padding: 10px 16px;
-            border-radius: 10px;
-            background: #0f172a;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 500;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
-            animation: slideIn 0.3s ease;
-            width: 100%;
-            pointer-events: auto;
-            text-align: center;
-        }
-        .toast.success {
-            background: #16a34a;
-        }
-        .toast.error {
-            background: #dc2626;
-        }
-        .toast.info {
-            background: #2563eb;
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-        .toast-out {
-            animation: slideOut 0.25s ease forwards;
-        }
-        @keyframes slideOut {
-            to {
-                opacity: 0;
-                transform: translateY(-20px) scale(0.95);
-            }
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px 16px;
-            color: #94a3b8;
-        }
-        .empty-state .big-icon {
-            font-size: 40px;
-            display: block;
-            margin-bottom: 10px;
-        }
-        .student-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 10px;
-        }
-        .student-card {
-            background: #ffffff;
-            border: 1.5px solid #e9edf2;
-            border-radius: 12px;
-            padding: 12px 12px 10px;
-            display: flex;
-            flex-direction: column;
-        }
-        .student-card .info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .student-card .name {
-            font-weight: 700;
-            font-size: 14px;
-            color: #0f172a;
-        }
-        .student-card .class-tag {
-            font-size: 11px;
-            background: #e9edf2;
-            padding: 2px 10px;
-            border-radius: 40px;
-            color: #475569;
-        }
-        .student-card .status-btns {
-            display: flex;
-            gap: 4px;
-        }
-        .student-card .status-btns .btn {
-            flex: 1;
-            justify-content: center;
-            padding: 4px 0;
-            font-size: 11px;
-            border-radius: 6px;
-            background: #f1f5f9;
-            color: #94a3b8;
-            border: 2px solid transparent;
-            min-height: 28px;
-            min-width: 0;
-        }
-        .student-card .status-btns .btn.active-present {
-            background: #dcfce7;
-            border-color: #16a34a;
-            color: #15803d;
-        }
-        .student-card .status-btns .btn.active-absent {
-            background: #fee2e2;
-            border-color: #dc2626;
-            color: #b91c1c;
-        }
-        .student-card .status-btns .btn.active-leave {
-            background: #ffedd5;
-            border-color: #ea580c;
-            color: #c2410c;
-        }
+
+        /* ===== 违纪面板（略） ===== */
         .violation-section {
             margin-bottom: 16px;
             border: 1px solid #e9edf2;
@@ -397,6 +315,16 @@
             background: #f8fafc;
             min-height: 48px;
         }
+        .violation-header:active {
+            background: #eef2f6;
+        }
+        @media (min-width: 640px) {
+            .violation-header {
+                padding: 14px 20px;
+                font-size: 16px;
+                min-height: 56px;
+            }
+        }
         .violation-header .arrow {
             transition: transform 0.25s;
             font-size: 14px;
@@ -408,7 +336,14 @@
         .violation-panel {
             padding: 12px 14px 16px;
             border-top: 1px solid #e9edf2;
+            animation: fadeIn 0.25s ease;
         }
+        @media (min-width: 640px) {
+            .violation-panel {
+                padding: 16px 20px 20px;
+            }
+        }
+
         .violation-form {
             display: flex;
             flex-wrap: wrap;
@@ -423,10 +358,41 @@
             flex: 1 1 100%;
             min-width: 100px;
         }
+        @media (min-width: 480px) {
+            .violation-form .field {
+                flex: 1 1 40%;
+                min-width: 120px;
+            }
+            .violation-form .field.field-checkbox {
+                flex: 0 1 auto;
+                min-width: 80px;
+            }
+            .violation-form .field.field-file {
+                flex: 0 1 120px;
+                min-width: 100px;
+            }
+        }
+        @media (min-width: 640px) {
+            .violation-form .field {
+                flex: 1;
+                min-width: 140px;
+            }
+            .violation-form .field.field-checkbox {
+                flex: 0 1 100px;
+            }
+            .violation-form .field.field-file {
+                flex: 0 1 140px;
+            }
+        }
         .violation-form .field label {
             font-size: 12px;
             font-weight: 600;
             color: #475569;
+        }
+        @media (min-width: 640px) {
+            .violation-form .field label {
+                font-size: 13px;
+            }
         }
         .violation-form .field select,
         .violation-form .field input {
@@ -435,9 +401,22 @@
             border-radius: 10px;
             font-size: 15px;
             outline: none;
+            transition: 0.2s;
             background: #fff;
             width: 100%;
             font-size: 16px;
+        }
+        @media (min-width: 640px) {
+            .violation-form .field select,
+            .violation-form .field input {
+                padding: 8px 14px;
+                font-size: 14px;
+            }
+        }
+        .violation-form .field select:focus,
+        .violation-form .field input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
         .violation-form .field-checkbox {
             flex-direction: row;
@@ -446,14 +425,31 @@
             min-width: 80px;
             flex: 0 1 auto;
         }
+        .violation-form .field-checkbox label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+        }
         .violation-form .field-checkbox input[type="checkbox"] {
             width: 20px;
             height: 20px;
             accent-color: #2563eb;
+            flex-shrink: 0;
         }
         .violation-form .field-file {
             flex: 1 1 100%;
             min-width: 100px;
+        }
+        @media (min-width: 480px) {
+            .violation-form .field-file {
+                flex: 0 1 120px;
+            }
+        }
+        .violation-form .field-file label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
         }
         .violation-form .field-file input[type="file"] {
             padding: 6px 8px;
@@ -463,6 +459,21 @@
             background: #fff;
             width: 100%;
         }
+        .violation-form .btn {
+            align-self: flex-end;
+            padding: 9px 16px;
+            min-height: 44px;
+            min-width: 60px;
+            flex: 1 1 100%;
+            justify-content: center;
+        }
+        @media (min-width: 480px) {
+            .violation-form .btn {
+                flex: 0 1 auto;
+                padding: 9px 20px;
+            }
+        }
+
         .violation-filter {
             display: flex;
             flex-wrap: wrap;
@@ -471,6 +482,21 @@
             margin-bottom: 12px;
             padding: 6px 0 10px;
             border-bottom: 1px solid #eef2f6;
+        }
+        .violation-filter label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #475569;
+        }
+        .violation-filter select {
+            padding: 6px 10px;
+            border: 1px solid #d1d9e6;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            background: #fff;
+            min-height: 40px;
+            flex: 1 1 120px;
         }
         .violation-filter .search-box {
             display: flex;
@@ -488,11 +514,17 @@
             outline: none;
             background: #fff;
             min-height: 40px;
+            min-width: 80px;
+        }
+        .violation-filter .search-box input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
         .violation-filter .search-box .btn-clear {
             background: transparent;
             border: none;
             color: #94a3b8;
+            cursor: pointer;
             font-size: 18px;
             padding: 4px 8px;
             min-height: 40px;
@@ -509,6 +541,14 @@
             text-align: left;
             padding-top: 4px;
         }
+        @media (min-width: 640px) {
+            .violation-filter .archive-title {
+                width: auto;
+                text-align: right;
+                padding-top: 0;
+            }
+        }
+
         .violation-list {
             display: flex;
             flex-direction: column;
@@ -516,6 +556,12 @@
             max-height: 450px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            padding-right: 2px;
+        }
+        @media (min-width: 640px) {
+            .violation-list {
+                max-height: 500px;
+            }
         }
         .violation-item {
             display: flex;
@@ -551,10 +597,21 @@
             color: #0f172a;
             font-size: 14px;
         }
+        .violation-item .info .v-student .sid {
+            font-weight: 400;
+            color: #94a3b8;
+            font-size: 12px;
+            margin-left: 4px;
+        }
         .violation-item .info .v-content {
             color: #334155;
             word-break: break-word;
             font-size: 14px;
+        }
+        .violation-item .info .v-content .highlight {
+            background: #fef08a;
+            padding: 0 2px;
+            border-radius: 2px;
         }
         .violation-item .info .v-time {
             font-size: 11px;
@@ -571,6 +628,11 @@
             display: inline-block;
             min-height: 30px;
             line-height: 20px;
+            touch-action: manipulation;
+        }
+        .violation-item .status-badge:active {
+            opacity: 0.6;
+            transform: scale(0.96);
         }
         .violation-item .status-badge.resolved {
             background: #dcfce7;
@@ -592,10 +654,16 @@
             background: transparent;
             border: none;
             font-size: 20px;
+            cursor: pointer;
+            color: #94a3b8;
             padding: 4px 8px;
             border-radius: 6px;
             min-height: 40px;
             min-width: 40px;
+            touch-action: manipulation;
+        }
+        .violation-item .actions .btn-icon:active {
+            background: #e9edf2;
         }
         .violation-item .images {
             display: flex;
@@ -611,6 +679,13 @@
             overflow: hidden;
             border: 1px solid #e9edf2;
             cursor: pointer;
+            flex-shrink: 0;
+        }
+        @media (min-width: 480px) {
+            .violation-item .images .img-thumb {
+                width: 60px;
+                height: 60px;
+            }
         }
         .violation-item .images .img-thumb img {
             width: 100%;
@@ -643,6 +718,11 @@
             padding: 4px 12px;
             cursor: pointer;
             min-height: 36px;
+            touch-action: manipulation;
+        }
+        .violation-item .upload-btn:active {
+            border-color: #2563eb;
+            background: #eff6ff;
         }
         .violation-item .upload-btn input[type="file"] {
             display: none;
@@ -653,6 +733,8 @@
             padding: 24px 0;
             font-size: 14px;
         }
+
+        /* ===== 模态框 ===== */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -665,12 +747,16 @@
             align-items: center;
             justify-content: center;
             padding: 12px;
+            animation: fadeIn 0.25s ease;
         }
         .modal-overlay .modal-content {
             max-width: 98%;
             max-height: 98%;
             background: transparent;
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .modal-overlay .modal-content img {
             max-width: 100%;
@@ -694,7 +780,306 @@
             align-items: center;
             justify-content: center;
             border: none;
+            touch-action: manipulation;
         }
+        @media (min-width: 640px) {
+            .modal-overlay .modal-close {
+                top: 12px;
+                right: 12px;
+                width: 48px;
+                height: 48px;
+                font-size: 32px;
+            }
+        }
+
+        /* ===== Tab ===== */
+        .tabs {
+            display: flex;
+            gap: 3px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 3px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        @media (min-width: 640px) {
+            .tabs {
+                gap: 4px;
+                border-radius: 14px;
+                padding: 4px;
+                margin-bottom: 24px;
+            }
+        }
+        .tab-btn {
+            flex: 1;
+            min-width: 70px;
+            padding: 8px 10px;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            touch-action: manipulation;
+            min-height: 40px;
+            white-space: nowrap;
+        }
+        .tab-btn:active {
+            transform: scale(0.96);
+        }
+        @media (min-width: 640px) {
+            .tab-btn {
+                min-width: 100px;
+                padding: 10px 18px;
+                font-size: 15px;
+                gap: 8px;
+                min-height: 48px;
+            }
+        }
+        .tab-btn.active {
+            background: #ffffff;
+            color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.10);
+        }
+        .tab-btn .icon {
+            font-size: 16px;
+        }
+        @media (min-width: 640px) {
+            .tab-btn .icon {
+                font-size: 18px;
+            }
+        }
+        .tab-panel {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== 考勤 ===== */
+        .attendance-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            background: #f8fafc;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid #e9edf2;
+        }
+        @media (min-width: 640px) {
+            .attendance-toolbar {
+                gap: 14px;
+                padding: 14px 18px;
+                border-radius: 14px;
+                margin-bottom: 22px;
+            }
+        }
+        .attendance-toolbar .left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .attendance-toolbar label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #334155;
+        }
+        .attendance-toolbar input[type="date"] {
+            padding: 6px 10px;
+            border: 1px solid #d1d9e6;
+            border-radius: 8px;
+            font-size: 15px;
+            background: #fff;
+            color: #0f172a;
+            outline: none;
+            min-height: 40px;
+            font-size: 16px;
+        }
+        @media (min-width: 640px) {
+            .attendance-toolbar input[type="date"] {
+                padding: 8px 14px;
+                font-size: 14px;
+                min-height: 40px;
+            }
+        }
+        .attendance-toolbar input[type="date"]:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+        #attendanceStatus {
+            font-size: 12px;
+            color: #64748b;
+            word-break: break-word;
+        }
+        @media (min-width: 640px) {
+            #attendanceStatus {
+                font-size: 14px;
+            }
+        }
+
+        .student-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+            margin-top: 4px;
+        }
+        @media (min-width: 480px) {
+            .student-grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                gap: 12px;
+            }
+        }
+        @media (min-width: 640px) {
+            .student-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 14px;
+            }
+        }
+        .student-card {
+            background: #ffffff;
+            border: 1.5px solid #e9edf2;
+            border-radius: 12px;
+            padding: 12px 12px 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        @media (min-width: 640px) {
+            .student-card {
+                padding: 16px 16px 14px;
+                border-radius: 14px;
+            }
+        }
+        .student-card .info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .student-card .name {
+            font-weight: 700;
+            font-size: 14px;
+            color: #0f172a;
+        }
+        .student-card .name .sid {
+            font-weight: 400;
+            font-size: 11px;
+            color: #94a3b8;
+            display: block;
+            margin-top: 1px;
+        }
+        @media (min-width: 640px) {
+            .student-card .name {
+                font-size: 16px;
+            }
+            .student-card .name .sid {
+                font-size: 12px;
+            }
+        }
+        .student-card .class-tag {
+            font-size: 11px;
+            background: #e9edf2;
+            padding: 2px 10px;
+            border-radius: 40px;
+            color: #475569;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        @media (min-width: 640px) {
+            .student-card .class-tag {
+                font-size: 12px;
+                padding: 2px 12px;
+            }
+        }
+        .student-card .status-btns {
+            display: flex;
+            gap: 4px;
+        }
+        .student-card .status-btns .btn {
+            flex: 1;
+            justify-content: center;
+            padding: 5px 0;
+            font-size: 12px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #94a3b8;
+            border: 2px solid transparent;
+            min-height: 32px;
+            min-width: 0;
+        }
+        @media (min-width: 640px) {
+            .student-card .status-btns .btn {
+                padding: 6px 0;
+                font-size: 13px;
+                border-radius: 8px;
+                min-height: 36px;
+            }
+        }
+        .student-card .status-btns .btn:active {
+            transform: scale(0.94);
+        }
+        .student-card .status-btns .btn.active-present {
+            background: #dcfce7;
+            border-color: #16a34a;
+            color: #15803d;
+        }
+        .student-card .status-btns .btn.active-absent {
+            background: #fee2e2;
+            border-color: #dc2626;
+            color: #b91c1c;
+        }
+        .student-card .status-btns .btn.active-leave {
+            background: #ffedd5;
+            border-color: #ea580c;
+            color: #c2410c;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+            color: #94a3b8;
+        }
+        .empty-state .big-icon {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .empty-state p {
+            font-size: 15px;
+            margin-top: 4px;
+        }
+        @media (min-width: 640px) {
+            .empty-state {
+                padding: 50px 20px;
+            }
+            .empty-state .big-icon {
+                font-size: 48px;
+            }
+        }
+
+        /* ===== 学生管理 ===== */
         .manage-form {
             display: flex;
             flex-wrap: wrap;
@@ -706,6 +1091,14 @@
             border: 1px solid #e9edf2;
             align-items: flex-end;
         }
+        @media (min-width: 640px) {
+            .manage-form {
+                padding: 18px 20px;
+                border-radius: 14px;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+        }
         .manage-form .field {
             display: flex;
             flex-direction: column;
@@ -713,10 +1106,26 @@
             flex: 1 1 100%;
             min-width: 100px;
         }
+        @media (min-width: 480px) {
+            .manage-form .field {
+                flex: 1 1 30%;
+            }
+        }
+        @media (min-width: 640px) {
+            .manage-form .field {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
         .manage-form .field label {
             font-size: 12px;
             font-weight: 600;
             color: #475569;
+        }
+        @media (min-width: 640px) {
+            .manage-form .field label {
+                font-size: 13px;
+            }
         }
         .manage-form .field input {
             padding: 8px 12px;
@@ -724,10 +1133,37 @@
             border-radius: 8px;
             font-size: 15px;
             outline: none;
+            transition: 0.2s;
             background: #fff;
             min-height: 40px;
             font-size: 16px;
         }
+        @media (min-width: 640px) {
+            .manage-form .field input {
+                padding: 8px 14px;
+                font-size: 14px;
+                min-height: 40px;
+            }
+        }
+        .manage-form .field input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+        .manage-form .btn {
+            align-self: flex-end;
+            padding: 9px 16px;
+            flex: 1 1 100%;
+            justify-content: center;
+            min-height: 44px;
+        }
+        @media (min-width: 480px) {
+            .manage-form .btn {
+                flex: 0 1 auto;
+                padding: 9px 24px;
+                min-height: 44px;
+            }
+        }
+
         .import-area {
             margin-top: 10px;
             margin-bottom: 16px;
@@ -740,11 +1176,33 @@
             align-items: center;
             gap: 10px;
         }
+        @media (min-width: 640px) {
+            .import-area {
+                margin-top: 12px;
+                margin-bottom: 24px;
+                padding: 16px 20px;
+                border-radius: 14px;
+                gap: 12px;
+            }
+        }
+        .import-area .import-label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         .import-area .hint {
             font-size: 12px;
             color: #64748b;
             flex: 1;
             min-width: 100px;
+        }
+        @media (min-width: 640px) {
+            .import-area .hint {
+                font-size: 13px;
+            }
         }
         .import-area .import-result {
             width: 100%;
@@ -752,64 +1210,147 @@
             font-size: 13px;
             color: #475569;
         }
+
+        /* ===== 学生列表（含多字段排序） ===== */
+        .student-list-header {
+            display: grid;
+            grid-template-columns: 60px 1fr 1fr auto;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #475569;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        @media (min-width: 480px) {
+            .student-list-header {
+                grid-template-columns: 80px 1fr 1fr auto;
+                padding: 10px 18px;
+                font-size: 14px;
+            }
+        }
+        @media (max-width: 400px) {
+            .student-list-header {
+                grid-template-columns: 50px 1fr 1fr auto;
+                font-size: 11px;
+                padding: 6px 10px;
+                gap: 4px;
+            }
+        }
+
         .student-list {
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
         .student-list-item {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 60px 1fr 1fr auto;
             gap: 8px;
-            padding: 10px 14px;
+            padding: 10px 16px;
             background: #fafcfd;
             border-radius: 10px;
             border: 1px solid #e9edf2;
+            align-items: center;
+            transition: 0.15s;
         }
         @media (min-width: 480px) {
             .student-list-item {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
+                grid-template-columns: 80px 1fr 1fr auto;
                 padding: 12px 18px;
+                gap: 12px;
             }
         }
-        .student-list-item .info {
-            display: flex;
-            align-items: center;
-            gap: 10px 16px;
-            flex-wrap: wrap;
+        @media (max-width: 400px) {
+            .student-list-item {
+                grid-template-columns: 50px 1fr 1fr auto;
+                font-size: 12px;
+                padding: 8px 10px;
+                gap: 4px;
+            }
         }
-        .student-list-item .info .name {
+        .student-list-item:active {
+            background: #f1f5f9;
+        }
+        .student-list-item .sid {
+            font-weight: 600;
+            color: #2563eb;
+            font-size: 13px;
+            font-family: monospace;
+        }
+        @media (max-width: 400px) {
+            .student-list-item .sid {
+                font-size: 11px;
+            }
+        }
+        .student-list-item .name {
             font-weight: 600;
             font-size: 14px;
+            color: #0f172a;
         }
-        .student-list-item .info .class-badge {
+        @media (max-width: 400px) {
+            .student-list-item .name {
+                font-size: 12px;
+            }
+        }
+        .student-list-item .class-badge {
             font-size: 12px;
             color: #64748b;
             background: #e9edf2;
             padding: 2px 12px;
             border-radius: 40px;
+            display: inline-block;
+            text-align: center;
         }
-        .student-list-item .info .meta {
+        @media (max-width: 400px) {
+            .student-list-item .class-badge {
+                font-size: 10px;
+                padding: 2px 8px;
+            }
+        }
+        .student-list-item .meta {
             font-size: 12px;
             color: #94a3b8;
+            white-space: nowrap;
+        }
+        @media (max-width: 400px) {
+            .student-list-item .meta {
+                font-size: 10px;
+            }
         }
         .student-list-item .actions {
             display: flex;
-            gap: 6px;
+            gap: 4px;
             flex-wrap: wrap;
+            justify-content: flex-end;
         }
         .student-list-item .actions .btn-archive {
             background: transparent;
             border: 1px solid #d1d9e6;
             border-radius: 8px;
-            padding: 4px 12px;
-            font-size: 13px;
+            padding: 4px 10px;
+            font-size: 12px;
             color: #475569;
             cursor: pointer;
-            min-height: 36px;
+            transition: 0.2s;
+            min-height: 32px;
+            touch-action: manipulation;
         }
+        .student-list-item .actions .btn-archive:active {
+            background: #e9edf2;
+        }
+        @media (max-width: 400px) {
+            .student-list-item .actions .btn-archive {
+                padding: 2px 6px;
+                font-size: 10px;
+                min-height: 26px;
+            }
+        }
+
+        /* ===== 统计报表 ===== */
         .stats-toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -821,11 +1362,30 @@
             border-radius: 12px;
             border: 1px solid #e9edf2;
         }
+        @media (min-width: 640px) {
+            .stats-toolbar {
+                gap: 14px;
+                padding: 14px 18px;
+                border-radius: 14px;
+                margin-bottom: 24px;
+            }
+        }
         .stats-toolbar .field {
             display: flex;
             align-items: center;
             gap: 6px;
             flex: 1 1 100%;
+        }
+        @media (min-width: 480px) {
+            .stats-toolbar .field {
+                flex: 1 1 40%;
+            }
+        }
+        .stats-toolbar .field label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #475569;
+            white-space: nowrap;
         }
         .stats-toolbar .field input[type="date"] {
             padding: 6px 10px;
@@ -838,11 +1398,46 @@
             min-height: 40px;
             font-size: 16px;
         }
+        @media (min-width: 640px) {
+            .stats-toolbar .field input[type="date"] {
+                padding: 6px 12px;
+                font-size: 14px;
+                min-height: 38px;
+            }
+        }
+        .stats-toolbar .field input[type="date"]:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .stats-toolbar .btn {
+            flex: 1 1 100%;
+            justify-content: center;
+            min-height: 44px;
+        }
+        @media (min-width: 480px) {
+            .stats-toolbar .btn {
+                flex: 0 1 auto;
+                min-height: 40px;
+            }
+        }
+
         .stats-summary {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin-bottom: 16px;
+        }
+        @media (min-width: 480px) {
+            .stats-summary {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 12px;
+            }
+        }
+        @media (min-width: 640px) {
+            .stats-summary {
+                gap: 14px;
+                margin-bottom: 28px;
+            }
         }
         .stats-summary .item {
             background: #f8fafc;
@@ -859,6 +1454,26 @@
             font-size: 11px;
             color: #64748b;
         }
+        @media (min-width: 480px) {
+            .stats-summary .item .num {
+                font-size: 22px;
+            }
+            .stats-summary .item .lbl {
+                font-size: 12px;
+            }
+        }
+        @media (min-width: 640px) {
+            .stats-summary .item {
+                padding: 14px 16px;
+            }
+            .stats-summary .item .num {
+                font-size: 24px;
+            }
+            .stats-summary .item .lbl {
+                font-size: 13px;
+            }
+        }
+
         .stats-table-wrap {
             overflow-x: auto;
             border-radius: 10px;
@@ -870,6 +1485,12 @@
             border-collapse: collapse;
             font-size: 13px;
             min-width: 400px;
+        }
+        @media (min-width: 640px) {
+            .stats-table {
+                font-size: 14px;
+                min-width: 500px;
+            }
         }
         .stats-table th {
             background: #f1f5f9;
@@ -884,6 +1505,17 @@
             padding: 8px 12px;
             border-bottom: 1px solid #eef2f6;
         }
+        @media (min-width: 640px) {
+            .stats-table th {
+                padding: 12px 16px;
+            }
+            .stats-table td {
+                padding: 10px 16px;
+            }
+        }
+        .stats-table tr:hover td {
+            background: #fafcfd;
+        }
         .stats-table .rate-bar {
             display: inline-block;
             height: 7px;
@@ -893,6 +1525,13 @@
             overflow: hidden;
             vertical-align: middle;
             margin-right: 6px;
+        }
+        @media (min-width: 640px) {
+            .stats-table .rate-bar {
+                width: 100px;
+                height: 8px;
+                margin-right: 10px;
+            }
         }
         .stats-table .rate-bar .fill {
             height: 100%;
@@ -918,6 +1557,89 @@
             display: block;
             margin-bottom: 8px;
         }
+        @media (min-width: 640px) {
+            .empty-stats {
+                padding: 32px 20px;
+            }
+            .empty-stats .big-icon {
+                font-size: 40px;
+            }
+        }
+
+        /* ===== Toast ===== */
+        .toast-container {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 90%;
+            max-width: 400px;
+            pointer-events: none;
+        }
+        @media (min-width: 640px) {
+            .toast-container {
+                top: 24px;
+                left: auto;
+                right: 24px;
+                transform: none;
+                width: auto;
+                max-width: 340px;
+            }
+        }
+        .toast {
+            padding: 10px 16px;
+            border-radius: 10px;
+            background: #0f172a;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+            animation: slideIn 0.3s ease;
+            width: 100%;
+            pointer-events: auto;
+            text-align: center;
+        }
+        @media (min-width: 640px) {
+            .toast {
+                padding: 12px 20px;
+                text-align: left;
+                border-radius: 12px;
+            }
+        }
+        .toast.success {
+            background: #16a34a;
+        }
+        .toast.error {
+            background: #dc2626;
+        }
+        .toast.info {
+            background: #2563eb;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .toast-out {
+            animation: slideOut 0.25s ease forwards;
+        }
+        @keyframes slideOut {
+            to {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+        }
+
+        /* ===== 滚动条 ===== */
         ::-webkit-scrollbar {
             width: 4px;
             height: 4px;
@@ -936,38 +1658,26 @@
 </head>
 <body>
     <div class="app-container" id="app">
-        <!-- ===== 头部（含导出/导入按钮） ===== -->
+        <!-- ===== 头部 ===== -->
         <header class="app-header">
             <h1><span>📚</span> 学生考勤管理系统</h1>
             <div class="header-actions">
                 <span class="header-date" id="headerDate">📅 加载中...</span>
-                <button class="btn btn-outline btn-sm" onclick="exportData()">📥 导出备份</button>
-                <button class="btn btn-outline btn-sm" onclick="importData()">📤 导入恢复</button>
-                <button class="btn btn-outline btn-sm" onclick="resetAllData()" title="清除所有数据（慎用）">🗑️ 重置</button>
+                <button class="btn btn-outline btn-sm" onclick="exportData()">📥 导出</button>
+                <button class="btn btn-outline btn-sm" onclick="importData()">📤 导入</button>
+                <button class="btn btn-outline btn-sm" onclick="resetAllData()" title="清除所有数据">🗑️ 重置</button>
             </div>
         </header>
 
         <!-- ===== 统计概览 ===== -->
         <div class="stats-row" id="statsRow">
-            <div class="stat-card accent">
-                <div class="number" id="totalStudents">0</div>
-                <div class="label">👨‍🎓 学生总数</div>
-            </div>
-            <div class="stat-card green">
-                <div class="number" id="todayPresent">0</div>
-                <div class="label">✅ 今日出勤</div>
-            </div>
-            <div class="stat-card orange">
-                <div class="number" id="todayAbsent">0</div>
-                <div class="label">❌ 今日缺勤</div>
-            </div>
-            <div class="stat-card purple">
-                <div class="number" id="todayRate">0%</div>
-                <div class="label">📊 今日出勤率</div>
-            </div>
+            <div class="stat-card accent"><div class="number" id="totalStudents">0</div><div class="label">👨‍🎓 学生总数</div></div>
+            <div class="stat-card green"><div class="number" id="todayPresent">0</div><div class="label">✅ 今日出勤</div></div>
+            <div class="stat-card orange"><div class="number" id="todayAbsent">0</div><div class="label">❌ 今日缺勤</div></div>
+            <div class="stat-card purple"><div class="number" id="todayRate">0%</div><div class="label">📊 今日出勤率</div></div>
         </div>
 
-        <!-- ===== 违纪记录 ===== -->
+        <!-- ===== 违纪档案 ===== -->
         <div class="violation-section">
             <div class="violation-header" onclick="toggleViolationPanel()">
                 <span>📋 违纪档案</span>
@@ -975,30 +1685,16 @@
             </div>
             <div class="violation-panel" id="violationPanel" style="display:none;">
                 <div class="violation-form">
-                    <div class="field">
-                        <label for="violationStudent">选择学生</label>
-                        <select id="violationStudent"></select>
-                    </div>
-                    <div class="field" style="flex:2;">
-                        <label for="violationContent">违纪内容</label>
-                        <input type="text" id="violationContent" placeholder="请输入违纪详情" />
-                    </div>
-                    <div class="field field-checkbox">
-                        <label for="violationResolved">已处理</label>
-                        <input type="checkbox" id="violationResolved" />
-                    </div>
-                    <div class="field field-file">
-                        <label for="violationImages">📎 图片</label>
-                        <input type="file" id="violationImages" accept="image/*" multiple />
-                    </div>
+                    <div class="field"><label for="violationStudent">选择学生</label><select id="violationStudent"></select></div>
+                    <div class="field" style="flex:2;"><label for="violationContent">违纪内容</label><input type="text" id="violationContent" placeholder="请输入违纪详情" /></div>
+                    <div class="field field-checkbox"><label for="violationResolved">已处理</label><input type="checkbox" id="violationResolved" /></div>
+                    <div class="field field-file"><label for="violationImages">📎 图片</label><input type="file" id="violationImages" accept="image/*" multiple /></div>
                     <button class="btn btn-primary" onclick="addViolation()">➕ 记录</button>
                     <button class="btn btn-outline" onclick="refreshViolations()">🔄 刷新</button>
                 </div>
                 <div class="violation-filter">
                     <label for="archiveFilter">📂 学生：</label>
-                    <select id="archiveFilter" onchange="onArchiveFilterChange()">
-                        <option value="">全部学生</option>
-                    </select>
+                    <select id="archiveFilter" onchange="onArchiveFilterChange()"><option value="">全部学生</option></select>
                     <div class="search-box">
                         <input type="text" id="archiveSearch" placeholder="🔍 搜索..." oninput="onSearchChange()" />
                         <button class="btn-clear" id="searchClearBtn" onclick="clearSearch()">✕</button>
@@ -1009,7 +1705,7 @@
             </div>
         </div>
 
-        <!-- ===== Tab 导航 ===== -->
+        <!-- ===== Tab ===== -->
         <div class="tabs" id="tabNav">
             <button class="tab-btn active" data-tab="attendance"><span class="icon">✅</span> 考勤打卡</button>
             <button class="tab-btn" data-tab="manage"><span class="icon">👨‍🎓</span> 学生管理</button>
@@ -1018,84 +1714,80 @@
 
         <!-- ===== 考勤打卡 ===== -->
         <div class="tab-panel active" id="panelAttendance">
-            <div class="attendance-toolbar" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;background:#f8fafc;padding:12px 14px;border-radius:12px;border:1px solid #e9edf2;">
-                <div class="left" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;">
+            <div class="attendance-toolbar">
+                <div class="left">
                     <label for="attendanceDate">📅 日期</label>
-                    <input type="date" id="attendanceDate" style="padding:6px 10px;border:1px solid #d1d9e6;border-radius:8px;font-size:15px;background:#fff;min-height:40px;font-size:16px;" />
+                    <input type="date" id="attendanceDate" />
                     <button class="btn btn-outline btn-sm" onclick="loadAttendance()">🔄 刷新</button>
-                    <span id="attendanceStatus" style="font-size:12px;color:#64748b;">未打卡</span>
+                    <span id="attendanceStatus">未打卡</span>
                 </div>
-                <div>
-                    <button class="btn btn-success btn-sm" onclick="markAllPresent()">✅ 全部出勤</button>
-                </div>
+                <div><button class="btn btn-success btn-sm" onclick="markAllPresent()">✅ 全部出勤</button></div>
             </div>
             <div id="attendanceGrid" class="student-grid"></div>
             <div id="attendanceEmpty" class="empty-state" style="display:none;">
-                <span class="big-icon">👨‍🎓</span>
-                <p>暂无学生，请先到「学生管理」添加学生。</p>
+                <span class="big-icon">👨‍🎓</span><p>暂无学生，请先到「学生管理」添加学生。</p>
             </div>
         </div>
 
-        <!-- ===== 学生管理 ===== -->
+        <!-- ===== 学生管理（多字段排序） ===== -->
         <div class="tab-panel" id="panelManage">
             <div class="manage-form">
-                <div class="field">
-                    <label for="studentName">姓名</label>
-                    <input type="text" id="studentName" placeholder="请输入学生姓名" />
-                </div>
-                <div class="field">
-                    <label for="studentClass">班级</label>
-                    <input type="text" id="studentClass" placeholder="如：一年级1班" />
-                </div>
+                <div class="field"><label for="studentId">学号</label><input type="text" id="studentId" placeholder="如：2024001" /></div>
+                <div class="field"><label for="studentName">姓名</label><input type="text" id="studentName" placeholder="请输入姓名" /></div>
+                <div class="field"><label for="studentClass">班级</label><input type="text" id="studentClass" placeholder="如：一年级1班" /></div>
                 <button class="btn btn-primary" onclick="addStudentFromForm()">➕ 添加学生</button>
             </div>
+
             <div class="import-area">
-                <span class="import-label" style="font-weight:600;font-size:13px;color:#334155;">📤 Excel 导入</span>
+                <span class="import-label">📤 Excel 导入</span>
                 <button class="btn btn-primary btn-sm" id="importExcelBtn">📂 选择文件</button>
-                <span class="hint">支持 .xlsx / .xls，第一列为姓名，第二列为班级</span>
+                <span class="hint">支持 .xlsx / .xls，列顺序：学号、姓名、班级</span>
                 <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;" />
                 <div class="import-result" id="importResult"></div>
             </div>
-            <div id="studentListContainer"></div>
+
+            <!-- 带多字段排序的学生列表 -->
+            <div id="studentListContainer">
+                <div class="student-list-header">
+                    <span>学号 <button class="btn-sort active" onclick="setSort('studentId')" title="按学号排序">↕ <span class="arrow" id="arrowStudentId">↑</span></button></span>
+                    <span>姓名 <button class="btn-sort" onclick="setSort('name')" title="按姓名排序">↕ <span class="arrow" id="arrowName">↑</span></button></span>
+                    <span>班级 <button class="btn-sort" onclick="setSort('class')" title="按班级排序">↕ <span class="arrow" id="arrowClass">↑</span></button></span>
+                    <span>操作</span>
+                </div>
+                <div id="studentList" class="student-list"></div>
+            </div>
             <div id="manageEmpty" class="empty-state" style="display:none;">
-                <span class="big-icon">📭</span>
-                <p>还没有学生，快来添加吧！</p>
+                <span class="big-icon">📭</span><p>还没有学生，快来添加吧！</p>
             </div>
         </div>
 
         <!-- ===== 统计报表 ===== -->
         <div class="tab-panel" id="panelStats">
             <div class="stats-toolbar">
-                <div class="field">
-                    <label for="statsStart">开始</label>
-                    <input type="date" id="statsStart" />
-                </div>
-                <div class="field">
-                    <label for="statsEnd">结束</label>
-                    <input type="date" id="statsEnd" />
-                </div>
+                <div class="field"><label for="statsStart">开始</label><input type="date" id="statsStart" /></div>
+                <div class="field"><label for="statsEnd">结束</label><input type="date" id="statsEnd" /></div>
                 <button class="btn btn-primary btn-sm" onclick="renderStats()">📊 生成报表</button>
                 <button class="btn btn-outline btn-sm" onclick="setThisWeek()">📅 本周</button>
                 <button class="btn btn-outline btn-sm" onclick="setThisMonth()">📅 本月</button>
             </div>
             <div class="stats-summary" id="statsSummary">
                 <div class="item"><div class="num" id="statsTotalDays">0</div><div class="lbl">统计天数</div></div>
-                <div class="item"><div class="num" id="statsTotalPresent">0</div><div class="lbl">总出勤人次</div></div>
-                <div class="item"><div class="num" id="statsTotalAbsent">0</div><div class="lbl">总缺勤人次</div></div>
-                <div class="item"><div class="num" id="statsTotalLeave">0</div><div class="lbl">总请假人次</div></div>
+                <div class="item"><div class="num" id="statsTotalPresent">0</div><div class="lbl">总出勤</div></div>
+                <div class="item"><div class="num" id="statsTotalAbsent">0</div><div class="lbl">总缺勤</div></div>
+                <div class="item"><div class="num" id="statsTotalLeave">0</div><div class="lbl">总请假</div></div>
             </div>
             <div id="statsContent"></div>
         </div>
     </div>
 
-    <!-- Toast 容器 -->
+    <!-- Toast -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- 图片预览模态框 -->
+    <!-- 图片预览 -->
     <div id="imageModal" class="modal-overlay" style="display:none;" onclick="closeImageModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <button class="modal-close" onclick="closeImageModal()">✕</button>
-            <img id="modalImage" src="" alt="违纪图片" />
+            <img id="modalImage" src="" alt="图片" />
         </div>
     </div>
 
@@ -1103,7 +1795,6 @@
         // ================================================================
         //  数据层
         // ================================================================
-
         const STORAGE_KEY = 'attendance_system_data';
 
         function getDefaultData() {
@@ -1123,6 +1814,10 @@
                         if (!v.images) v.images = [];
                         return v;
                     });
+                    parsed.students = parsed.students.map(s => {
+                        if (s.studentId === undefined) s.studentId = '';
+                        return s;
+                    });
                     return parsed;
                 }
             } catch (e) { console.warn('读取数据失败', e); }
@@ -1139,37 +1834,43 @@
 
         function formatDateTime(d) {
             const date = d instanceof Date ? d : new Date(d);
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const h = String(date.getHours()).padStart(2, '0');
-            const min = String(date.getMinutes()).padStart(2, '0');
+            const y = date.getFullYear(),
+                m = String(date.getMonth() + 1).padStart(2, '0'),
+                day = String(date.getDate()).padStart(2, '0');
+            const h = String(date.getHours()).padStart(2, '0'),
+                min = String(date.getMinutes()).padStart(2, '0');
             return `${y}-${m}-${day} ${h}:${min}`;
         }
 
         function formatDate(d) {
             const date = d instanceof Date ? d : new Date(d);
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
+            const y = date.getFullYear(),
+                m = String(date.getMonth() + 1).padStart(2, '0'),
+                day = String(date.getDate()).padStart(2, '0');
             return `${y}-${m}-${day}`;
         }
 
-        function todayStr() {
-            return formatDate(new Date());
-        }
+        function todayStr() { return formatDate(new Date()); }
 
         function getWeekday(dateStr) {
             const d = new Date(dateStr + 'T00:00:00');
             return ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
         }
 
+        function friendlyDate(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            return `${d.getMonth()+1}月${d.getDate()}日 周${getWeekday(dateStr)}`;
+        }
+
         let data = loadData();
+
+        // ===== 排序状态 =====
+        let sortField = 'studentId'; // 当前排序字段
+        let sortAsc = true; // true=升序, false=降序
 
         // ================================================================
         //  Toast
         // ================================================================
-
         function showToast(message, type = 'info', duration = 2200) {
             const container = document.getElementById('toastContainer');
             const el = document.createElement('div');
@@ -1185,7 +1886,6 @@
         // ================================================================
         //  图片预览
         // ================================================================
-
         function openImageModal(src) {
             document.getElementById('modalImage').src = src;
             document.getElementById('imageModal').style.display = 'flex';
@@ -1195,18 +1895,17 @@
             if (e && e.target !== e.currentTarget) return;
             document.getElementById('imageModal').style.display = 'none';
         }
+        document.getElementById('imageModal').addEventListener('click', function(e) {
+            if (e.target === this) closeImageModal();
+        });
 
         // ================================================================
-        //  🔥 核心新增功能：数据导出与导入
+        //  导出/导入
         // ================================================================
-
         function exportData() {
             const currentData = loadData();
-            const totalStudents = currentData.students ? currentData.students.length : 0;
-            if (totalStudents === 0) {
-                showToast('⚠️ 当前没有数据可导出', 'error');
-                return;
-            }
+            const total = currentData.students ? currentData.students.length : 0;
+            if (total === 0) { showToast('⚠️ 没有数据可导出', 'error'); return; }
             const json = JSON.stringify(currentData, null, 2);
             const blob = new Blob([json], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -1217,18 +1916,13 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            const totalRecords = currentData.records ? currentData.records.length : 0;
-            const totalViolations = currentData.violations ? currentData.violations.length : 0;
-            showToast(`✅ 导出成功！包含 ${totalStudents} 名学生、${totalRecords} 条考勤、${totalViolations} 条违纪`, 'success');
+            showToast(`✅ 导出成功：${total} 名学生`, 'success');
         }
 
         function importData() {
             const currentData = loadData();
-            const hasData = currentData.students && currentData.students.length > 0;
-            if (hasData) {
-                if (!confirm('⚠️ 导入将覆盖当前所有数据（学生、考勤、违纪记录），确定继续吗？')) {
-                    return;
-                }
+            if (currentData.students && currentData.students.length > 0) {
+                if (!confirm('⚠️ 导入将覆盖当前所有数据，确定继续吗？')) return;
             }
             const input = document.createElement('input');
             input.type = 'file';
@@ -1236,37 +1930,31 @@
             input.onchange = function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-                if (file.size > 10 * 1024 * 1024) {
-                    showToast('❌ 文件过大（超过10MB）', 'error');
-                    return;
-                }
+                if (file.size > 10 * 1024 * 1024) { showToast('❌ 文件超过10MB', 'error'); return; }
                 const reader = new FileReader();
                 reader.onload = function(ev) {
                     try {
                         const imported = JSON.parse(ev.target.result);
-                        if (typeof imported !== 'object' || !imported.students || !Array.isArray(imported.students)) {
-                            showToast('❌ 文件格式无效：缺少 students 字段', 'error');
+                        if (!imported.students || !Array.isArray(imported.students)) {
+                            showToast('❌ 文件格式无效', 'error');
                             return;
                         }
-                        if (!imported.records || !Array.isArray(imported.records)) {
-                            showToast('❌ 文件格式无效：缺少 records 字段', 'error');
-                            return;
-                        }
-                        if (!imported.violations || !Array.isArray(imported.violations)) {
-                            showToast('❌ 文件格式无效：缺少 violations 字段', 'error');
-                            return;
-                        }
+                        if (!imported.records || !Array.isArray(imported.records)) { showToast('❌ 缺少 records', 'error');
+                            return; }
+                        if (!imported.violations || !Array.isArray(imported.violations)) { showToast('❌ 缺少 violations',
+                                'error'); return; }
+                        imported.students = imported.students.map(s => {
+                            if (s.studentId === undefined) s.studentId = '';
+                            return s;
+                        });
                         const count = imported.students.length;
-                        if (!confirm(`将恢复 ${count} 名学生及其相关数据，确定继续吗？`)) {
-                            return;
-                        }
+                        if (!confirm(`将恢复 ${count} 名学生，确定吗？`)) return;
                         data = imported;
                         saveData(data);
                         refreshAll();
-                        showToast(`✅ 数据恢复成功！共 ${count} 名学生`, 'success');
+                        showToast(`✅ 恢复成功：${count} 名学生`, 'success');
                     } catch (err) {
-                        showToast('❌ 文件解析失败：' + err.message, 'error');
-                        console.error(err);
+                        showToast('❌ 解析失败：' + err.message, 'error');
                     }
                 };
                 reader.readAsText(file);
@@ -1275,11 +1963,46 @@
         }
 
         // ================================================================
-        //  核心业务逻辑（复用之前的代码）
+        //  核心业务（含学号）
         // ================================================================
-
         function getStudents() {
             return [...data.students].sort((a, b) => a.createdAt - b.createdAt);
+        }
+
+        // ===== 多字段排序函数 =====
+        function getSortedStudents() {
+            const students = getStudents();
+            return students.sort((a, b) => {
+                let valA, valB;
+                switch (sortField) {
+                    case 'studentId':
+                        valA = (a.studentId || '').toString();
+                        valB = (b.studentId || '').toString();
+                        // 尝试数字比较
+                        const numA = parseFloat(valA),
+                            numB = parseFloat(valB);
+                        if (!isNaN(numA) && !isNaN(numB)) {
+                            return sortAsc ? numA - numB : numB - numA;
+                        }
+                        break;
+                    case 'name':
+                        valA = a.name || '';
+                        valB = b.name || '';
+                        break;
+                    case 'class':
+                        valA = a.class || '';
+                        valB = b.class || '';
+                        break;
+                    default:
+                        valA = a.studentId || '';
+                        valB = b.studentId || '';
+                }
+                // 字符串比较
+                if (typeof valA === 'string' && typeof valB === 'string') {
+                    return sortAsc ? valA.localeCompare(valB, 'zh-Hans-CN') : valB.localeCompare(valA, 'zh-Hans-CN');
+                }
+                return 0;
+            });
         }
 
         function getAttendanceMap(dateStr) {
@@ -1303,21 +2026,30 @@
                 return;
             }
             const existing = data.records.find(r => r.studentId === studentId && r.date === dateStr);
-            if (existing) {
-                existing.status = status;
-            } else {
+            if (existing) { existing.status = status; } else {
                 data.records.push({ id: genId(), studentId, date: dateStr, status });
             }
             saveData(data);
         }
 
-        function addStudent(name, className) {
+        function addStudent(studentId, name, className) {
             if (!name || !name.trim()) return { success: false, message: '姓名不能为空' };
             const trimmedName = name.trim();
             const trimmedClass = (className || '未分班').trim() || '未分班';
+            const sid = (studentId || '').trim();
+            if (sid) {
+                const exist = data.students.some(s => s.studentId === sid);
+                if (exist) return { success: false, message: `学号 "${sid}" 已存在` };
+            }
             const exist = data.students.some(s => s.name === trimmedName && s.class === trimmedClass);
             if (exist) return { success: false, message: `学生 "${trimmedName}"（${trimmedClass}）已存在` };
-            data.students.push({ id: genId(), name: trimmedName, class: trimmedClass, createdAt: Date.now() });
+            data.students.push({
+                id: genId(),
+                studentId: sid,
+                name: trimmedName,
+                class: trimmedClass,
+                createdAt: Date.now()
+            });
             saveData(data);
             return { success: true, message: `已添加：${trimmedName}` };
         }
@@ -1330,12 +2062,12 @@
             data.records = data.records.filter(r => r.studentId !== studentId);
             data.violations = data.violations.filter(v => v.studentId !== studentId);
             saveData(data);
-            showToast(`已删除学生：${student.name}`, 'info');
+            showToast(`已删除：${student.name}`, 'info');
             refreshAll();
         }
 
         function resetAllData() {
-            if (!confirm('⚠️ 确定要清除所有数据吗？此操作不可恢复！')) return;
+            if (!confirm('⚠️ 确定要清除所有数据吗？')) return;
             if (!confirm('再次确认：所有数据将被删除！')) return;
             data = getDefaultData();
             saveData(data);
@@ -1344,9 +2076,45 @@
         }
 
         // ================================================================
+        //  排序切换（多字段）
+        // ================================================================
+        function setSort(field) {
+            if (sortField === field) {
+                // 同一字段切换方向
+                sortAsc = !sortAsc;
+            } else {
+                sortField = field;
+                sortAsc = true; // 切换新字段默认升序
+            }
+            // 更新箭头样式
+            updateSortArrows();
+            renderStudentList();
+        }
+
+        function updateSortArrows() {
+            const fields = ['studentId', 'name', 'class'];
+            fields.forEach(f => {
+                const arrow = document.getElementById(`arrow${f.charAt(0).toUpperCase() + f.slice(1)}`);
+                if (arrow) {
+                    if (sortField === f) {
+                        arrow.textContent = sortAsc ? '↑' : '↓';
+                        arrow.className = 'arrow' + (sortAsc ? '' : ' desc');
+                        // 高亮当前排序按钮
+                        const btn = arrow.closest('.btn-sort');
+                        if (btn) btn.classList.add('active');
+                    } else {
+                        arrow.textContent = '↑';
+                        arrow.className = 'arrow';
+                        const btn = arrow.closest('.btn-sort');
+                        if (btn) btn.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        // ================================================================
         //  违纪相关
         // ================================================================
-
         function getViolations() {
             return [...data.violations].sort((a, b) => new Date(b.date) - new Date(a.date));
         }
@@ -1369,17 +2137,17 @@
                 images: images || []
             });
             saveData(data);
-            showToast(`已记录 ${student.name} 的违纪行为`, 'success');
+            showToast(`已记录 ${student.name} 的违纪`, 'success');
             refreshViolationsUI();
             return true;
         }
 
         function deleteViolation(violationId) {
-            if (!confirm('确定要删除这条违纪记录吗？')) return;
+            if (!confirm('确定删除这条违纪记录吗？')) return;
             data.violations = data.violations.filter(v => v.id !== violationId);
             saveData(data);
             refreshViolationsUI();
-            showToast('已删除违纪记录', 'info');
+            showToast('已删除', 'info');
         }
 
         function toggleResolved(violationId) {
@@ -1399,7 +2167,7 @@
             let loaded = 0;
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                if (!file.type.startsWith('image/')) { showToast(`${file.name} 不是图片文件`, 'error'); continue; }
+                if (!file.type.startsWith('image/')) { showToast(`${file.name} 不是图片`, 'error'); continue; }
                 const reader = new FileReader();
                 readers.push(new Promise((resolve) => {
                     reader.onload = function(e) { v.images.push(e.target.result);
@@ -1411,7 +2179,7 @@
             Promise.all(readers).then(() => {
                 if (loaded > 0) { saveData(data);
                     refreshViolationsUI();
-                    showToast(`成功添加 ${loaded} 张图片`, 'success'); }
+                    showToast(`添加 ${loaded} 张图片`, 'success'); }
             }).catch(err => { showToast('图片读取失败', 'error');
                 console.error(err); });
         }
@@ -1419,7 +2187,7 @@
         function deleteImage(violationId, index) {
             const v = data.violations.find(item => item.id === violationId);
             if (!v) return;
-            if (!confirm('确定要删除这张图片吗？')) return;
+            if (!confirm('删除这张图片？')) return;
             v.images.splice(index, 1);
             saveData(data);
             refreshViolationsUI();
@@ -1428,29 +2196,36 @@
 
         function renderViolationSelect() {
             const select = document.getElementById('violationStudent');
-            const students = getStudents();
+            const students = getSortedStudents();
             select.innerHTML = '<option value="">-- 请选择学生 --</option>';
             students.forEach(s => {
-                const option = document.createElement('option');
-                option.value = s.id;
-                option.textContent = `${s.name}（${s.class}）`;
-                select.appendChild(option);
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = `${s.studentId || ''} ${s.name}（${s.class}）`.trim();
+                select.appendChild(opt);
             });
         }
 
         function renderArchiveFilter() {
             const select = document.getElementById('archiveFilter');
-            const students = getStudents();
+            const students = getSortedStudents();
             const currentVal = select.value;
             select.innerHTML = '<option value="">全部学生</option>';
             students.forEach(s => {
-                const option = document.createElement('option');
-                option.value = s.id;
-                option.textContent = `${s.name}（${s.class}）`;
-                select.appendChild(option);
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = `${s.studentId || ''} ${s.name}（${s.class}）`.trim();
+                select.appendChild(opt);
             });
             if (currentVal && students.some(s => s.id === currentVal)) select.value = currentVal;
             else select.value = '';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function highlightText(text, keyword) {
@@ -1459,13 +2234,6 @@
             const kw = escapeHtml(keyword);
             const regex = new RegExp(`(${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
             return escaped.replace(regex, '<span class="highlight">$1</span>');
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
         }
 
         function renderViolationList(filterStudentId, searchKeyword) {
@@ -1480,13 +2248,14 @@
                 violations = violations.filter(v => {
                     const student = studentMap[v.studentId];
                     const name = student ? student.name.toLowerCase() : '';
+                    const sid = student ? (student.studentId || '').toLowerCase() : '';
                     const cls = student ? student.class.toLowerCase() : '';
                     const content = v.content.toLowerCase();
-                    return name.includes(kw) || cls.includes(kw) || content.includes(kw);
+                    return name.includes(kw) || sid.includes(kw) || cls.includes(kw) || content.includes(kw);
                 });
             }
             if (violations.length === 0) {
-                container.innerHTML = `<div class="violation-empty">📭 暂无匹配的违纪记录</div>`;
+                container.innerHTML = `<div class="violation-empty">📭 暂无匹配记录</div>`;
                 return;
             }
             const students = getStudents();
@@ -1496,8 +2265,10 @@
             violations.forEach(v => {
                 const student = studentMap[v.studentId];
                 const name = student ? student.name : '（已删除）';
+                const sid = student ? (student.studentId || '') : '';
                 const cls = student ? student.class : '';
                 const time = formatDateTime(v.date);
+                const displaySid = searchKeyword ? highlightText(sid, searchKeyword) : escapeHtml(sid);
                 const displayName = searchKeyword ? highlightText(name, searchKeyword) : escapeHtml(name);
                 const displayCls = searchKeyword && cls ? highlightText(cls, searchKeyword) : escapeHtml(cls);
                 const displayContent = searchKeyword ? highlightText(v.content, searchKeyword) : escapeHtml(v.content);
@@ -1509,7 +2280,7 @@
                     v.images.forEach((img, idx) => {
                         imagesHtml += `
                             <div class="img-thumb" onclick="openImageModal('${img}')">
-                                <img src="${img}" alt="违纪图片${idx+1}" />
+                                <img src="${img}" alt="图片${idx+1}" />
                                 <button class="del-img" onclick="event.stopPropagation();deleteImage('${v.id}', ${idx})">✕</button>
                             </div>
                         `;
@@ -1524,11 +2295,12 @@
                                onchange="document.getElementById('${uploadId}').files && addImagesToViolation('${v.id}', this.files); this.value='';" />
                     </div>
                 `;
+                const sidDisplay = sid ? `<span class="sid">#${displaySid}</span>` : '';
                 html += `
                     <div class="violation-item">
                         <div class="row">
                             <div class="info">
-                                <span class="v-student">${displayName} ${cls ? '· ' + displayCls : ''}</span>
+                                <span class="v-student">${displayName} ${sidDisplay} ${cls ? '· ' + displayCls : ''}</span>
                                 <span class="v-content">${displayContent}</span>
                                 <span class="v-time">${time}</span>
                             </div>
@@ -1548,10 +2320,8 @@
         function refreshViolationsUI() {
             renderViolationSelect();
             renderArchiveFilter();
-            const filterSelect = document.getElementById('archiveFilter');
-            const filterVal = filterSelect ? filterSelect.value : '';
-            const searchInput = document.getElementById('archiveSearch');
-            const searchVal = searchInput ? searchInput.value : '';
+            const filterVal = document.getElementById('archiveFilter').value || '';
+            const searchVal = document.getElementById('archiveSearch').value || '';
             renderViolationList(filterVal, searchVal);
             const titleEl = document.getElementById('archiveTitle');
             const students = getStudents();
@@ -1562,10 +2332,10 @@
             } else {
                 titleText = '显示全部记录';
             }
-            if (searchVal && searchVal.trim()) titleText += ` · 搜索 "${searchVal.trim()}"`;
+            if (searchVal.trim()) titleText += ` · 搜索 "${searchVal.trim()}"`;
             titleEl.textContent = titleText;
             const clearBtn = document.getElementById('searchClearBtn');
-            if (searchVal && searchVal.trim()) clearBtn.classList.add('visible');
+            if (searchVal.trim()) clearBtn.classList.add('visible');
             else clearBtn.classList.remove('visible');
         }
 
@@ -1605,7 +2375,7 @@
                 let hasError = false;
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
-                    if (!file.type.startsWith('image/')) { showToast(`${file.name} 不是图片文件`, 'error');
+                    if (!file.type.startsWith('image/')) { showToast(`${file.name} 不是图片`, 'error');
                         hasError = true; break; }
                     const reader = new FileReader();
                     readers.push(new Promise((resolve) => {
@@ -1646,9 +2416,8 @@
         }
 
         // ================================================================
-        //  Excel 导入
+        //  Excel 导入（支持学号列）
         // ================================================================
-
         function importExcel(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -1662,7 +2431,7 @@
                         const firstRow = json[0];
                         if (firstRow && firstRow.length > 0) {
                             const firstCell = String(firstRow[0] || '').toLowerCase();
-                            if (firstCell.includes('姓名') || firstCell.includes('名字') || firstCell.includes('学生')) {
+                            if (firstCell.includes('学号') || firstCell.includes('姓名') || firstCell.includes('名字')) {
                                 startRow = 1;
                             }
                         }
@@ -1670,22 +2439,34 @@
                     let added = 0,
                         skipped = 0;
                     const students = getStudents();
-                    const existingSet = new Set(students.map(s => `${s.name}|${s.class}`));
+                    const existingSet = new Set(students.map(s => `${s.studentId || ''}|${s.name}|${s.class}`));
                     for (let i = startRow; i < json.length; i++) {
                         const row = json[i];
                         if (!row || row.length === 0) continue;
-                        let name = String(row[0] || '').trim();
+                        let sid = String(row[0] || '').trim();
+                        let name = String(row[1] || '').trim();
+                        let cls = String(row[2] || '').trim() || '未分班';
                         if (!name) continue;
-                        let cls = String(row[1] || '').trim() || '未分班';
-                        const key = `${name}|${cls}`;
+                        const key = `${sid}|${name}|${cls}`;
                         if (existingSet.has(key)) { skipped++; continue; }
-                        data.students.push({ id: genId(), name, class: cls, createdAt: Date.now() });
+                        if (sid) {
+                            const existSid = students.some(s => s.studentId === sid);
+                            if (existSid) { skipped++; continue; }
+                        }
+                        data.students.push({
+                            id: genId(),
+                            studentId: sid,
+                            name: name,
+                            class: cls,
+                            createdAt: Date.now()
+                        });
                         existingSet.add(key);
                         added++;
+                        students.push({ studentId: sid, name, class: cls });
                     }
                     saveData(data);
                     refreshAll();
-                    document.getElementById('importResult').textContent = `✅ 导入成功：新增 ${added} 名学生，跳过 ${skipped} 名`;
+                    document.getElementById('importResult').textContent = `✅ 导入成功：新增 ${added} 名，跳过 ${skipped} 名`;
                     showToast(`导入完成：新增 ${added} 人`, 'success');
                 } catch (err) {
                     showToast('文件解析失败：' + err.message, 'error');
@@ -1698,7 +2479,6 @@
         // ================================================================
         //  渲染层
         // ================================================================
-
         function refreshAll() {
             updateStats();
             renderAttendance();
@@ -1707,6 +2487,7 @@
             const panel = document.getElementById('violationPanel');
             if (panel.style.display !== 'none') refreshViolationsUI();
             document.getElementById('headerDate').textContent = `📅 ${todayStr()} 周${getWeekday(todayStr())}`;
+            updateSortArrows(); // 确保箭头状态正确
         }
 
         function updateStats() {
@@ -1726,7 +2507,7 @@
         function renderAttendance() {
             const container = document.getElementById('attendanceGrid');
             const empty = document.getElementById('attendanceEmpty');
-            const students = getStudents();
+            const students = getSortedStudents();
             const dateStr = document.getElementById('attendanceDate').value || todayStr();
             const map = getAttendanceMap(dateStr);
             const markedCount = Object.keys(map).length;
@@ -1747,13 +2528,14 @@
             let html = '';
             students.forEach(student => {
                 const status = map[student.id] || '';
-                const isPresent = status === 'present';
-                const isAbsent = status === 'absent';
-                const isLeave = status === 'leave';
+                const isPresent = status === 'present',
+                    isAbsent = status === 'absent',
+                    isLeave = status === 'leave';
+                const sidDisplay = student.studentId ? `<span class="sid">#${escapeHtml(student.studentId)}</span>` : '';
                 html += `
                     <div class="student-card">
                         <div class="info">
-                            <span class="name">${escapeHtml(student.name)}</span>
+                            <span class="name">${escapeHtml(student.name)} ${sidDisplay}</span>
                             <span class="class-tag">${escapeHtml(student.class)}</span>
                         </div>
                         <div class="status-btns">
@@ -1795,66 +2577,75 @@
         function loadAttendance() { refreshAll();
             showToast('已刷新', 'info'); }
 
+        // ===== 学生列表（多字段排序） =====
         function renderStudentList() {
-            const container = document.getElementById('studentListContainer');
+            const container = document.getElementById('studentList');
             const empty = document.getElementById('manageEmpty');
-            const students = getStudents();
-            if (students.length === 0) { container.innerHTML = '';
-                empty.style.display = 'block'; return; }
+            const students = getSortedStudents();
+            if (students.length === 0) {
+                container.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
             empty.style.display = 'none';
-            let html = '<div class="student-list">';
+            let html = '';
             students.forEach(s => {
                 const recordCount = getStudentRecords(s.id).length;
                 const violationCount = getViolationsByStudent(s.id).length;
+                const sidDisplay = s.studentId ? escapeHtml(s.studentId) : '—';
                 html += `
                     <div class="student-list-item">
-                        <div class="info">
-                            <span class="name">${escapeHtml(s.name)}</span>
-                            <span class="class-badge">${escapeHtml(s.class)}</span>
-                            <span class="meta">📊 ${recordCount} 条考勤 · 📋 ${violationCount} 次违纪</span>
-                        </div>
+                        <span class="sid">${sidDisplay}</span>
+                        <span class="name">${escapeHtml(s.name)}</span>
+                        <span><span class="class-badge">${escapeHtml(s.class)}</span></span>
                         <div class="actions">
-                            <button class="btn-archive" onclick="viewStudentViolation('${s.id}')">📋 档案</button>
-                            <button class="btn btn-danger btn-xs" onclick="deleteStudent('${s.id}')">🗑️ 删除</button>
+                            <span class="meta">📊${recordCount} 📋${violationCount}</span>
+                            <button class="btn-archive" onclick="viewStudentViolation('${s.id}')" title="违纪档案">📋</button>
+                            <button class="btn btn-danger btn-xs" onclick="deleteStudent('${s.id}')">🗑️</button>
                         </div>
                     </div>
                 `;
             });
-            html += '</div>';
             container.innerHTML = html;
         }
 
         function addStudentFromForm() {
+            const sidInput = document.getElementById('studentId');
             const nameInput = document.getElementById('studentName');
             const classInput = document.getElementById('studentClass');
-            const result = addStudent(nameInput.value, classInput.value);
-            if (result.success) { nameInput.value = '';
+            const result = addStudent(sidInput.value, nameInput.value, classInput.value);
+            if (result.success) {
+                sidInput.value = '';
+                nameInput.value = '';
                 classInput.value = '';
                 showToast(result.message, 'success');
-                refreshAll(); } else { showToast(result.message, 'error'); }
+                refreshAll();
+            } else {
+                showToast(result.message, 'error');
+            }
         }
 
         // ================================================================
         //  统计报表
         // ================================================================
-
         function renderStats() {
             const startInput = document.getElementById('statsStart');
             const endInput = document.getElementById('statsEnd');
-            let start = startInput.value;
-            let end = endInput.value;
+            let start = startInput.value,
+                end = endInput.value;
             if (!start || !end) {
                 const today = new Date();
-                const sevenDaysAgo = new Date(today);
-                sevenDaysAgo.setDate(today.getDate() - 6);
-                start = formatDate(sevenDaysAgo);
+                const sevenAgo = new Date(today);
+                sevenAgo.setDate(today.getDate() - 6);
+                start = formatDate(sevenAgo);
                 end = formatDate(today);
                 startInput.value = start;
                 endInput.value = end;
             }
             const students = getStudents();
             if (students.length === 0) {
-                document.getElementById('statsContent').innerHTML = `<div class="empty-stats"><span class="big-icon">📭</span><p>暂无学生数据</p></div>`;
+                document.getElementById('statsContent').innerHTML =
+                    `<div class="empty-stats"><span class="big-icon">📭</span><p>暂无学生数据</p></div>`;
                 document.getElementById('statsSummary').innerHTML =
                     `<div class="item"><div class="num">0</div><div class="lbl">统计天数</div></div><div class="item"><div class="num">0</div><div class="lbl">总出勤</div></div><div class="item"><div class="num">0</div><div class="lbl">总缺勤</div></div><div class="item"><div class="num">0</div><div class="lbl">总请假</div></div>`;
                 return;
@@ -1865,7 +2656,8 @@
             while (current <= endDate) { dates.push(formatDate(current));
                 current.setDate(current.getDate() + 1); }
             if (dates.length === 0) {
-                document.getElementById('statsContent').innerHTML = `<div class="empty-stats"><span class="big-icon">📅</span><p>请选择有效日期范围</p></div>`;
+                document.getElementById('statsContent').innerHTML =
+                    `<div class="empty-stats"><span class="big-icon">📅</span><p>请选择有效日期范围</p></div>`;
                 return;
             }
             const studentStats = students.map(student => {
@@ -1892,17 +2684,21 @@
                 const total = Object.keys(map).length;
                 return { date, present, absent, leave, total };
             });
-            let html = `<div style="margin-bottom:16px;font-weight:600;font-size:15px;color:#0f172a;">📋 考勤明细（${dates.length} 天）</div>
-                <div class="stats-table-wrap"><table class="stats-table"><thead><tr><th>姓名</th><th>班级</th><th>✅ 出勤</th><th>❌ 缺勤</th><th>📋 请假</th><th>📊 出勤率</th></tr></thead><tbody>`;
+            let html =
+                `<div style="margin-bottom:16px;font-weight:600;font-size:15px;color:#0f172a;">📋 考勤明细（${dates.length} 天）</div>
+                <div class="stats-table-wrap"><table class="stats-table"><thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>✅ 出勤</th><th>❌ 缺勤</th><th>📋 请假</th><th>📊 出勤率</th></tr></thead><tbody>`;
             studentStats.forEach(s => {
                 const rateClass = s.rate >= 80 ? 'high' : (s.rate >= 50 ? 'mid' : 'low');
-                html += `<tr><td><strong>${escapeHtml(s.student.name)}</strong></td><td>${escapeHtml(s.student.class)}</td>
+                const sid = s.student.studentId || '—';
+                html += `<tr><td>${escapeHtml(sid)}</td><td><strong>${escapeHtml(s.student.name)}</strong></td>
+                        <td>${escapeHtml(s.student.class)}</td>
                         <td style="color:#16a34a;font-weight:600;">${s.present}</td><td style="color:#dc2626;">${s.absent}</td>
                         <td style="color:#ea580c;">${s.leave}</td>
                         <td><div class="rate-bar"><div class="fill ${rateClass}" style="width:${s.rate}%;"></div></div>${s.rate}%</td></tr>`;
             });
             html += `</tbody></table></div>`;
-            html += `<div style="margin:20px 0 12px;font-weight:600;font-size:15px;color:#0f172a;">📅 每日考勤汇总</div>
+            html +=
+                `<div style="margin:20px 0 12px;font-weight:600;font-size:15px;color:#0f172a;">📅 每日考勤汇总</div>
                 <div class="stats-table-wrap"><table class="stats-table"><thead><tr><th>日期</th><th>✅ 出勤</th><th>❌ 缺勤</th><th>📋 请假</th><th>📊 已打卡/总人数</th></tr></thead><tbody>`;
             dailyStats.forEach(d => {
                 const totalStudents = students.length;
@@ -1939,7 +2735,6 @@
         // ================================================================
         //  初始化与事件绑定
         // ================================================================
-
         document.getElementById('tabNav').addEventListener('click', function(e) {
             const btn = e.target.closest('.tab-btn');
             if (!btn) return;
@@ -1964,6 +2759,10 @@
                 refreshViolationsUI(); }
         });
         document.getElementById('attendanceDate').addEventListener('change', function() { refreshAll(); });
+        document.getElementById('studentId').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault();
+                document.getElementById('studentName').focus(); }
+        });
         document.getElementById('studentName').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') { e.preventDefault();
                 document.getElementById('studentClass').focus(); }
@@ -1974,6 +2773,7 @@
         });
         document.getElementById('statsStart').addEventListener('change', renderStats);
         document.getElementById('statsEnd').addEventListener('change', renderStats);
+
         document.getElementById('importExcelBtn').addEventListener('click', function() { document.getElementById('fileInput')
                 .click(); });
         document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -1998,12 +2798,16 @@
             sevenAgo.setDate(d.getDate() - 6);
             document.getElementById('statsStart').value = formatDate(sevenAgo);
             document.getElementById('statsEnd').value = formatDate(d);
+            // 默认按学号升序
+            sortField = 'studentId';
+            sortAsc = true;
             refreshAll();
         })();
 
-        // 暴露全局方法
+        // 暴露全局
         window.exportData = exportData;
         window.importData = importData;
+        window.setSort = setSort;
         window.addStudentFromForm = addStudentFromForm;
         window.deleteStudent = deleteStudent;
         window.setAttendanceStatus = setAttendanceStatus;
