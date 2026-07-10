@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>📚 学生考勤管理系统（多字段排序）</title>
+    <title>📚 学生考勤管理系统（违纪统计排名）</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
     </script>
     <style>
-        /* ===== 基础样式（沿用之前的完整样式，此处只列关键改动） ===== */
+        /* ===== 基础重置 & 通用样式 ===== */
         * {
             margin: 0;
             padding: 0;
@@ -47,7 +47,7 @@
             }
         }
 
-        /* ===== 头部（略，与之前相同） ===== */
+        /* ===== 头部 ===== */
         .app-header {
             display: flex;
             justify-content: space-between;
@@ -191,39 +191,7 @@
             min-width: 26px;
         }
 
-        /* ===== 排序按钮样式 ===== */
-        .btn-sort {
-            background: transparent;
-            border: none;
-            font-weight: 700;
-            color: #475569;
-            cursor: pointer;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 13px;
-            touch-action: manipulation;
-            min-height: 28px;
-            min-width: 28px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .btn-sort:active {
-            background: #e9edf2;
-        }
-        .btn-sort .arrow {
-            font-size: 12px;
-            transition: transform 0.2s;
-            display: inline-block;
-        }
-        .btn-sort .arrow.desc {
-            transform: rotate(180deg);
-        }
-        .btn-sort.active {
-            color: #2563eb;
-        }
-
-        /* ===== 统计卡片（略） ===== */
+        /* ===== 统计卡片 ===== */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -294,8 +262,43 @@
         .stat-card.purple .number {
             color: #7c3aed;
         }
+        .stat-card.red .number {
+            color: #dc2626;
+        }
 
-        /* ===== 违纪面板（略） ===== */
+        /* ===== 排序按钮 ===== */
+        .btn-sort {
+            background: transparent;
+            border: none;
+            font-weight: 700;
+            color: #475569;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            touch-action: manipulation;
+            min-height: 28px;
+            min-width: 28px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-sort:active {
+            background: #e9edf2;
+        }
+        .btn-sort .arrow {
+            font-size: 12px;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+        .btn-sort .arrow.desc {
+            transform: rotate(180deg);
+        }
+        .btn-sort.active {
+            color: #2563eb;
+        }
+
+        /* ===== 违纪面板 ===== */
         .violation-section {
             margin-bottom: 16px;
             border: 1px solid #e9edf2;
@@ -1211,7 +1214,7 @@
             color: #475569;
         }
 
-        /* ===== 学生列表（含多字段排序） ===== */
+        /* ===== 学生列表 ===== */
         .student-list-header {
             display: grid;
             grid-template-columns: 60px 1fr 1fr auto;
@@ -1350,7 +1353,7 @@
             }
         }
 
-        /* ===== 统计报表 ===== */
+        /* ===== 违纪统计 ===== */
         .stats-toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -1474,6 +1477,7 @@
             }
         }
 
+        /* 违纪统计排名表格 */
         .stats-table-wrap {
             overflow-x: auto;
             border-radius: 10px;
@@ -1484,12 +1488,12 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
-            min-width: 400px;
+            min-width: 500px;
         }
         @media (min-width: 640px) {
             .stats-table {
                 font-size: 14px;
-                min-width: 500px;
+                min-width: 600px;
             }
         }
         .stats-table th {
@@ -1504,6 +1508,7 @@
         .stats-table td {
             padding: 8px 12px;
             border-bottom: 1px solid #eef2f6;
+            vertical-align: middle;
         }
         @media (min-width: 640px) {
             .stats-table th {
@@ -1516,36 +1521,85 @@
         .stats-table tr:hover td {
             background: #fafcfd;
         }
+        .stats-table .rank {
+            font-weight: 700;
+            color: #2563eb;
+            text-align: center;
+        }
+        .stats-table .rank.gold {
+            color: #f59e0b;
+        }
+        .stats-table .rank.silver {
+            color: #94a3b8;
+        }
+        .stats-table .rank.bronze {
+            color: #d97706;
+        }
         .stats-table .rate-bar {
             display: inline-block;
-            height: 7px;
+            height: 8px;
             border-radius: 40px;
             background: #e2e8f0;
-            width: 60px;
+            width: 80px;
             overflow: hidden;
             vertical-align: middle;
-            margin-right: 6px;
+            margin-right: 8px;
         }
         @media (min-width: 640px) {
             .stats-table .rate-bar {
-                width: 100px;
-                height: 8px;
-                margin-right: 10px;
+                width: 120px;
+                height: 10px;
+                margin-right: 12px;
             }
         }
         .stats-table .rate-bar .fill {
             height: 100%;
             border-radius: 40px;
             background: #2563eb;
+            transition: width 0.6s ease;
         }
         .stats-table .rate-bar .fill.high {
-            background: #16a34a;
+            background: #dc2626;
         }
         .stats-table .rate-bar .fill.mid {
-            background: #ea580c;
+            background: #f59e0b;
         }
         .stats-table .rate-bar .fill.low {
-            background: #dc2626;
+            background: #16a34a;
+        }
+        .stats-table .student-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .stats-table .student-tag {
+            font-size: 12px;
+            background: #e9edf2;
+            padding: 2px 10px;
+            border-radius: 40px;
+            color: #1e293b;
+            cursor: pointer;
+            transition: 0.2s;
+            touch-action: manipulation;
+            white-space: nowrap;
+        }
+        .stats-table .student-tag:active {
+            background: #2563eb;
+            color: #fff;
+        }
+        @media (min-width: 640px) {
+            .stats-table .student-tag {
+                font-size: 13px;
+                padding: 2px 12px;
+            }
+            .stats-table .student-tag:hover {
+                background: #2563eb;
+                color: #fff;
+            }
+        }
+        .stats-table .content-cell {
+            max-width: 180px;
+            word-break: break-word;
         }
         .empty-stats {
             padding: 28px 16px;
@@ -1709,10 +1763,12 @@
         <div class="tabs" id="tabNav">
             <button class="tab-btn active" data-tab="attendance"><span class="icon">✅</span> 考勤打卡</button>
             <button class="tab-btn" data-tab="manage"><span class="icon">👨‍🎓</span> 学生管理</button>
-            <button class="tab-btn" data-tab="stats"><span class="icon">📊</span> 统计报表</button>
+            <button class="tab-btn" data-tab="stats"><span class="icon">📊</span> 违纪统计</button>
         </div>
 
-        <!-- ===== 考勤打卡 ===== -->
+        <!-- ========================================================= -->
+        <!-- TAB 1: 考勤打卡 -->
+        <!-- ========================================================= -->
         <div class="tab-panel active" id="panelAttendance">
             <div class="attendance-toolbar">
                 <div class="left">
@@ -1729,7 +1785,9 @@
             </div>
         </div>
 
-        <!-- ===== 学生管理（多字段排序） ===== -->
+        <!-- ========================================================= -->
+        <!-- TAB 2: 学生管理 -->
+        <!-- ========================================================= -->
         <div class="tab-panel" id="panelManage">
             <div class="manage-form">
                 <div class="field"><label for="studentId">学号</label><input type="text" id="studentId" placeholder="如：2024001" /></div>
@@ -1746,7 +1804,6 @@
                 <div class="import-result" id="importResult"></div>
             </div>
 
-            <!-- 带多字段排序的学生列表 -->
             <div id="studentListContainer">
                 <div class="student-list-header">
                     <span>学号 <button class="btn-sort active" onclick="setSort('studentId')" title="按学号排序">↕ <span class="arrow" id="arrowStudentId">↑</span></button></span>
@@ -1761,22 +1818,39 @@
             </div>
         </div>
 
-        <!-- ===== 统计报表 ===== -->
+        <!-- ========================================================= -->
+        <!-- TAB 3: 违纪统计（替代原统计报表） -->
+        <!-- ========================================================= -->
         <div class="tab-panel" id="panelStats">
             <div class="stats-toolbar">
-                <div class="field"><label for="statsStart">开始</label><input type="date" id="statsStart" /></div>
-                <div class="field"><label for="statsEnd">结束</label><input type="date" id="statsEnd" /></div>
-                <button class="btn btn-primary btn-sm" onclick="renderStats()">📊 生成报表</button>
+                <div class="field">
+                    <label for="statsStart">开始</label>
+                    <input type="date" id="statsStart" />
+                </div>
+                <div class="field">
+                    <label for="statsEnd">结束</label>
+                    <input type="date" id="statsEnd" />
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="renderStats()">📊 生成排名</button>
                 <button class="btn btn-outline btn-sm" onclick="setThisWeek()">📅 本周</button>
                 <button class="btn btn-outline btn-sm" onclick="setThisMonth()">📅 本月</button>
             </div>
+
+            <!-- 统计汇总卡片 -->
             <div class="stats-summary" id="statsSummary">
-                <div class="item"><div class="num" id="statsTotalDays">0</div><div class="lbl">统计天数</div></div>
-                <div class="item"><div class="num" id="statsTotalPresent">0</div><div class="lbl">总出勤</div></div>
-                <div class="item"><div class="num" id="statsTotalAbsent">0</div><div class="lbl">总缺勤</div></div>
-                <div class="item"><div class="num" id="statsTotalLeave">0</div><div class="lbl">总请假</div></div>
+                <div class="item"><div class="num" id="statsTotalViolations">0</div><div class="lbl">📋 总违纪次数</div></div>
+                <div class="item"><div class="num" id="statsTotalStudents">0</div><div class="lbl">👨‍🎓 涉及学生数</div></div>
+                <div class="item"><div class="num" id="statsTotalTypes">0</div><div class="lbl">📂 违纪类型数</div></div>
+                <div class="item"><div class="num" id="statsAvgPerStudent">0</div><div class="lbl">📊 人均违纪次数</div></div>
             </div>
-            <div id="statsContent"></div>
+
+            <!-- 排名结果 -->
+            <div id="statsContent">
+                <div class="empty-stats">
+                    <span class="big-icon">📊</span>
+                    <p>请选择日期范围后点击「生成排名」</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1865,8 +1939,8 @@
         let data = loadData();
 
         // ===== 排序状态 =====
-        let sortField = 'studentId'; // 当前排序字段
-        let sortAsc = true; // true=升序, false=降序
+        let sortField = 'studentId';
+        let sortAsc = true;
 
         // ================================================================
         //  Toast
@@ -1963,13 +2037,12 @@
         }
 
         // ================================================================
-        //  核心业务（含学号）
+        //  核心业务
         // ================================================================
         function getStudents() {
             return [...data.students].sort((a, b) => a.createdAt - b.createdAt);
         }
 
-        // ===== 多字段排序函数 =====
         function getSortedStudents() {
             const students = getStudents();
             return students.sort((a, b) => {
@@ -1978,7 +2051,6 @@
                     case 'studentId':
                         valA = (a.studentId || '').toString();
                         valB = (b.studentId || '').toString();
-                        // 尝试数字比较
                         const numA = parseFloat(valA),
                             numB = parseFloat(valB);
                         if (!isNaN(numA) && !isNaN(numB)) {
@@ -1997,7 +2069,6 @@
                         valA = a.studentId || '';
                         valB = b.studentId || '';
                 }
-                // 字符串比较
                 if (typeof valA === 'string' && typeof valB === 'string') {
                     return sortAsc ? valA.localeCompare(valB, 'zh-Hans-CN') : valB.localeCompare(valA, 'zh-Hans-CN');
                 }
@@ -2076,17 +2147,11 @@
         }
 
         // ================================================================
-        //  排序切换（多字段）
+        //  排序切换
         // ================================================================
         function setSort(field) {
-            if (sortField === field) {
-                // 同一字段切换方向
-                sortAsc = !sortAsc;
-            } else {
-                sortField = field;
-                sortAsc = true; // 切换新字段默认升序
-            }
-            // 更新箭头样式
+            if (sortField === field) { sortAsc = !sortAsc; } else { sortField = field;
+                sortAsc = true; }
             updateSortArrows();
             renderStudentList();
         }
@@ -2099,7 +2164,6 @@
                     if (sortField === f) {
                         arrow.textContent = sortAsc ? '↑' : '↓';
                         arrow.className = 'arrow' + (sortAsc ? '' : ' desc');
-                        // 高亮当前排序按钮
                         const btn = arrow.closest('.btn-sort');
                         if (btn) btn.classList.add('active');
                     } else {
@@ -2121,6 +2185,10 @@
 
         function getViolationsByStudent(studentId) {
             return data.violations.filter(v => v.studentId === studentId).sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+
+        function getViolationsInRange(startDate, endDate) {
+            return data.violations.filter(v => v.date >= startDate && v.date <= endDate);
         }
 
         function addViolationRecord(studentId, content, resolved, images) {
@@ -2416,7 +2484,7 @@
         }
 
         // ================================================================
-        //  Excel 导入（支持学号列）
+        //  Excel 导入
         // ================================================================
         function importExcel(file) {
             const reader = new FileReader();
@@ -2477,17 +2545,199 @@
         }
 
         // ================================================================
+        //  违纪统计排名（核心新功能）
+        // ================================================================
+        function renderStats() {
+            const startInput = document.getElementById('statsStart');
+            const endInput = document.getElementById('statsEnd');
+            let start = startInput.value;
+            let end = endInput.value;
+
+            if (!start || !end) {
+                const today = new Date();
+                const sevenAgo = new Date(today);
+                sevenAgo.setDate(today.getDate() - 6);
+                start = formatDate(sevenAgo);
+                end = formatDate(today);
+                startInput.value = start;
+                endInput.value = end;
+            }
+
+            // 获取日期范围内的所有违纪记录
+            const allViolations = getViolationsInRange(start, end);
+
+            if (allViolations.length === 0) {
+                document.getElementById('statsContent').innerHTML = `
+                    <div class="empty-stats">
+                        <span class="big-icon">📭</span>
+                        <p>在 ${friendlyDate(start)} 至 ${friendlyDate(end)} 期间暂无违纪记录</p>
+                    </div>
+                `;
+                document.getElementById('statsTotalViolations').textContent = '0';
+                document.getElementById('statsTotalStudents').textContent = '0';
+                document.getElementById('statsTotalTypes').textContent = '0';
+                document.getElementById('statsAvgPerStudent').textContent = '0';
+                return;
+            }
+
+            // ---- 统计汇总 ----
+            const totalViolations = allViolations.length;
+            const studentMap = {};
+            const contentMap = {};
+
+            allViolations.forEach(v => {
+                // 按内容分组
+                const key = v.content.trim();
+                if (!contentMap[key]) {
+                    contentMap[key] = { content: key, count: 0, studentIds: [] };
+                }
+                contentMap[key].count++;
+                // 记录涉及的学生（去重）
+                if (!contentMap[key].studentIds.includes(v.studentId)) {
+                    contentMap[key].studentIds.push(v.studentId);
+                }
+                // 统计涉及学生总数
+                if (!studentMap[v.studentId]) {
+                    studentMap[v.studentId] = true;
+                }
+            });
+
+            const totalStudents = Object.keys(studentMap).length;
+            const totalTypes = Object.keys(contentMap).length;
+            const avgPerStudent = totalStudents > 0 ? (totalViolations / totalStudents).toFixed(1) : '0';
+
+            document.getElementById('statsTotalViolations').textContent = totalViolations;
+            document.getElementById('statsTotalStudents').textContent = totalStudents;
+            document.getElementById('statsTotalTypes').textContent = totalTypes;
+            document.getElementById('statsAvgPerStudent').textContent = avgPerStudent;
+
+            // ---- 按次数排名 ----
+            const sorted = Object.values(contentMap).sort((a, b) => b.count - a.count);
+
+            // 获取学生姓名映射
+            const students = getStudents();
+            const studentNameMap = {};
+            students.forEach(s => { studentNameMap[s.id] = s; });
+
+            // ---- 生成HTML ----
+            let html = `
+                <div style="margin-bottom:16px;font-weight:600;font-size:15px;color:#0f172a;">
+                    🏆 违纪行为排名（${friendlyDate(start)} ~ ${friendlyDate(end)}）
+                </div>
+                <div class="stats-table-wrap">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th style="width:50px;">排名</th>
+                                <th style="min-width:120px;">违纪内容</th>
+                                <th style="width:80px;">次数</th>
+                                <th style="width:120px;">占比</th>
+                                <th>涉及学生</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            if (sorted.length === 0) {
+                html += `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:30px 0;">暂无数据</td></tr>`;
+            } else {
+                sorted.forEach((item, index) => {
+                    const rank = index + 1;
+                    const percentage = totalViolations > 0 ? Math.round((item.count / totalViolations) * 100) : 0;
+                    let rankClass = '';
+                    if (rank === 1) rankClass = 'gold';
+                    else if (rank === 2) rankClass = 'silver';
+                    else if (rank === 3) rankClass = 'bronze';
+
+                    // 进度条颜色
+                    let barClass = 'low';
+                    if (percentage > 30) barClass = 'high';
+                    else if (percentage > 15) barClass = 'mid';
+
+                    // 涉及学生标签
+                    let studentTags = '';
+                    if (item.studentIds.length > 0) {
+                        const tags = item.studentIds.map(sid => {
+                            const student = studentNameMap[sid];
+                            if (!student) return '';
+                            const displayName = escapeHtml(student.name);
+                            return `<span class="student-tag" onclick="viewStudentViolation('${sid}')" title="查看 ${displayName} 的违纪档案">${displayName}</span>`;
+                        }).filter(t => t);
+                        studentTags = `<div class="student-tags">${tags.join('')}</div>`;
+                    } else {
+                        studentTags = '<span style="color:#94a3b8;">—</span>';
+                    }
+
+                    html += `
+                        <tr>
+                            <td class="rank ${rankClass}">#${rank}</td>
+                            <td class="content-cell"><strong>${escapeHtml(item.content)}</strong></td>
+                            <td style="font-weight:600;color:#2563eb;">${item.count}</td>
+                            <td>
+                                <div class="rate-bar">
+                                    <div class="fill ${barClass}" style="width:${percentage}%;"></div>
+                                </div>
+                                ${percentage}%
+                            </td>
+                            <td>${studentTags}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:12px;font-size:13px;color:#94a3b8;text-align:right;">
+                    共 ${totalViolations} 条违纪记录，涉及 ${totalStudents} 名学生
+                </div>
+            `;
+
+            document.getElementById('statsContent').innerHTML = html;
+        }
+
+        // ================================================================
+        //  快捷日期设置
+        // ================================================================
+        function setThisWeek() {
+            const today = new Date();
+            const day = today.getDay();
+            const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(today);
+            monday.setDate(diff);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            document.getElementById('statsStart').value = formatDate(monday);
+            document.getElementById('statsEnd').value = formatDate(sunday);
+            renderStats();
+        }
+
+        function setThisMonth() {
+            const today = new Date();
+            const first = new Date(today.getFullYear(), today.getMonth(), 1);
+            const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            document.getElementById('statsStart').value = formatDate(first);
+            document.getElementById('statsEnd').value = formatDate(last);
+            renderStats();
+        }
+
+        // ================================================================
         //  渲染层
         // ================================================================
         function refreshAll() {
             updateStats();
             renderAttendance();
             renderStudentList();
-            renderStats();
+            // 只在违纪统计Tab可见时刷新
+            const statsPanel = document.getElementById('panelStats');
+            if (statsPanel.classList.contains('active')) {
+                renderStats();
+            }
             const panel = document.getElementById('violationPanel');
             if (panel.style.display !== 'none') refreshViolationsUI();
             document.getElementById('headerDate').textContent = `📅 ${todayStr()} 周${getWeekday(todayStr())}`;
-            updateSortArrows(); // 确保箭头状态正确
+            updateSortArrows();
         }
 
         function updateStats() {
@@ -2577,7 +2827,6 @@
         function loadAttendance() { refreshAll();
             showToast('已刷新', 'info'); }
 
-        // ===== 学生列表（多字段排序） =====
         function renderStudentList() {
             const container = document.getElementById('studentList');
             const empty = document.getElementById('manageEmpty');
@@ -2626,113 +2875,6 @@
         }
 
         // ================================================================
-        //  统计报表
-        // ================================================================
-        function renderStats() {
-            const startInput = document.getElementById('statsStart');
-            const endInput = document.getElementById('statsEnd');
-            let start = startInput.value,
-                end = endInput.value;
-            if (!start || !end) {
-                const today = new Date();
-                const sevenAgo = new Date(today);
-                sevenAgo.setDate(today.getDate() - 6);
-                start = formatDate(sevenAgo);
-                end = formatDate(today);
-                startInput.value = start;
-                endInput.value = end;
-            }
-            const students = getStudents();
-            if (students.length === 0) {
-                document.getElementById('statsContent').innerHTML =
-                    `<div class="empty-stats"><span class="big-icon">📭</span><p>暂无学生数据</p></div>`;
-                document.getElementById('statsSummary').innerHTML =
-                    `<div class="item"><div class="num">0</div><div class="lbl">统计天数</div></div><div class="item"><div class="num">0</div><div class="lbl">总出勤</div></div><div class="item"><div class="num">0</div><div class="lbl">总缺勤</div></div><div class="item"><div class="num">0</div><div class="lbl">总请假</div></div>`;
-                return;
-            }
-            const dates = [];
-            let current = new Date(start + 'T00:00:00');
-            const endDate = new Date(end + 'T00:00:00');
-            while (current <= endDate) { dates.push(formatDate(current));
-                current.setDate(current.getDate() + 1); }
-            if (dates.length === 0) {
-                document.getElementById('statsContent').innerHTML =
-                    `<div class="empty-stats"><span class="big-icon">📅</span><p>请选择有效日期范围</p></div>`;
-                return;
-            }
-            const studentStats = students.map(student => {
-                const records = getStudentRecordsInRange(student.id, start, end);
-                const present = records.filter(r => r.status === 'present').length;
-                const absent = records.filter(r => r.status === 'absent').length;
-                const leave = records.filter(r => r.status === 'leave').length;
-                const total = dates.length;
-                const rate = total > 0 ? Math.round((present / total) * 100) : 0;
-                return { student, present, absent, leave, total, rate };
-            });
-            const totalPresent = studentStats.reduce((sum, s) => sum + s.present, 0);
-            const totalAbsent = studentStats.reduce((sum, s) => sum + s.absent, 0);
-            const totalLeave = studentStats.reduce((sum, s) => sum + s.leave, 0);
-            document.getElementById('statsTotalDays').textContent = dates.length;
-            document.getElementById('statsTotalPresent').textContent = totalPresent;
-            document.getElementById('statsTotalAbsent').textContent = totalAbsent;
-            document.getElementById('statsTotalLeave').textContent = totalLeave;
-            const dailyStats = dates.map(date => {
-                const map = getAttendanceMap(date);
-                const present = Object.values(map).filter(v => v === 'present').length;
-                const absent = Object.values(map).filter(v => v === 'absent').length;
-                const leave = Object.values(map).filter(v => v === 'leave').length;
-                const total = Object.keys(map).length;
-                return { date, present, absent, leave, total };
-            });
-            let html =
-                `<div style="margin-bottom:16px;font-weight:600;font-size:15px;color:#0f172a;">📋 考勤明细（${dates.length} 天）</div>
-                <div class="stats-table-wrap"><table class="stats-table"><thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>✅ 出勤</th><th>❌ 缺勤</th><th>📋 请假</th><th>📊 出勤率</th></tr></thead><tbody>`;
-            studentStats.forEach(s => {
-                const rateClass = s.rate >= 80 ? 'high' : (s.rate >= 50 ? 'mid' : 'low');
-                const sid = s.student.studentId || '—';
-                html += `<tr><td>${escapeHtml(sid)}</td><td><strong>${escapeHtml(s.student.name)}</strong></td>
-                        <td>${escapeHtml(s.student.class)}</td>
-                        <td style="color:#16a34a;font-weight:600;">${s.present}</td><td style="color:#dc2626;">${s.absent}</td>
-                        <td style="color:#ea580c;">${s.leave}</td>
-                        <td><div class="rate-bar"><div class="fill ${rateClass}" style="width:${s.rate}%;"></div></div>${s.rate}%</td></tr>`;
-            });
-            html += `</tbody></table></div>`;
-            html +=
-                `<div style="margin:20px 0 12px;font-weight:600;font-size:15px;color:#0f172a;">📅 每日考勤汇总</div>
-                <div class="stats-table-wrap"><table class="stats-table"><thead><tr><th>日期</th><th>✅ 出勤</th><th>❌ 缺勤</th><th>📋 请假</th><th>📊 已打卡/总人数</th></tr></thead><tbody>`;
-            dailyStats.forEach(d => {
-                const totalStudents = students.length;
-                html += `<tr><td>${friendlyDate(d.date)}</td><td style="color:#16a34a;font-weight:600;">${d.present}</td>
-                        <td style="color:#dc2626;">${d.absent}</td><td style="color:#ea580c;">${d.leave}</td>
-                        <td>${d.total} / ${totalStudents}</td></tr>`;
-            });
-            html += `</tbody></table></div>`;
-            document.getElementById('statsContent').innerHTML = html;
-        }
-
-        function setThisWeek() {
-            const today = new Date();
-            const day = today.getDay();
-            const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-            const monday = new Date(today);
-            monday.setDate(diff);
-            const sunday = new Date(monday);
-            sunday.setDate(monday.getDate() + 6);
-            document.getElementById('statsStart').value = formatDate(monday);
-            document.getElementById('statsEnd').value = formatDate(sunday);
-            renderStats();
-        }
-
-        function setThisMonth() {
-            const today = new Date();
-            const first = new Date(today.getFullYear(), today.getMonth(), 1);
-            const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-            document.getElementById('statsStart').value = formatDate(first);
-            document.getElementById('statsEnd').value = formatDate(last);
-            renderStats();
-        }
-
-        // ================================================================
         //  初始化与事件绑定
         // ================================================================
         document.getElementById('tabNav').addEventListener('click', function(e) {
@@ -2743,7 +2885,19 @@
             btn.classList.add('active');
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
             document.getElementById(`panel${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
-            if (tab === 'stats') renderStats();
+            if (tab === 'stats') {
+                // 首次打开或切换到统计时，如果日期为空则设置默认值并渲染
+                const start = document.getElementById('statsStart').value;
+                const end = document.getElementById('statsEnd').value;
+                if (!start || !end) {
+                    const today = new Date();
+                    const sevenAgo = new Date(today);
+                    sevenAgo.setDate(today.getDate() - 6);
+                    document.getElementById('statsStart').value = formatDate(sevenAgo);
+                    document.getElementById('statsEnd').value = formatDate(today);
+                }
+                renderStats();
+            }
             if (tab === 'attendance') { updateStats();
                 renderAttendance(); }
             if (tab === 'manage') { renderStudentList();
@@ -2798,10 +2952,11 @@
             sevenAgo.setDate(d.getDate() - 6);
             document.getElementById('statsStart').value = formatDate(sevenAgo);
             document.getElementById('statsEnd').value = formatDate(d);
-            // 默认按学号升序
             sortField = 'studentId';
             sortAsc = true;
             refreshAll();
+            // 初始渲染统计
+            setTimeout(() => renderStats(), 100);
         })();
 
         // 暴露全局
