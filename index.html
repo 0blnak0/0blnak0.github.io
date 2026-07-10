@@ -465,9 +465,11 @@
         // ================================================================
         //  🔑 Supabase 配置（请替换）
         // ================================================================
-        const SUPABASE_URL = 'https://lbccdnmfgwmwibathfbg.supabase.co'; // 替换
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxiY2Nkbm1mZ3dtd2liYXRoZmJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MzY5NTAsImV4cCI6MjA5OTIxMjk1MH0.Vuxyd5qkNdFUY0VJHJcQ0feoWb5z3UwhNH_Szaw4ytk'; // 替换
-
+npm install @supabase/server
+SUPABASE_URL=https://lbccdnmfgwmwibathfbg.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_nHvMvs3fYb6nyd_5UvjtDw_VvKqc9qf
+SUPABASE_SECRET_KEY=sb_secret_MKw8Mj0pTPBDlnp1kYaCXQ_cLic5Iel
+SUPABASE_JWKS_URL=https://lbccdnmfgwmwibathfbg.supabase.co/auth/v1/.well-known/jwks.json
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const STORAGE_KEY = 'attendance_system_data';
 
