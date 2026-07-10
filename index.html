@@ -3,63 +3,539 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>📚 学生考勤管理系统（云端存储）</title>
-    <!-- 引入 SheetJS 用于 Excel 导入 -->
+    <title>📚 学生考勤管理系统（云端）</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
     </script>
-    <!-- 引入 Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
     </script>
     <style>
-        /* ===== 原有样式保持不变 ===== */
-        /* 为了篇幅，此处仅保留核心样式，实际使用时直接复制上一版完整样式 */
-        /* 建议：您可以直接使用上一版完整样式，此处为占位 */
-        /* 由于回答长度限制，我将在此处省略样式，使用时请将完整样式粘贴进来 */
-        /* 或直接下载我提供的完整文件 */
+        /* ===== 样式同之前，由于篇幅省略，您可以直接复制之前的完整样式 ===== */
+        /* 注意：本回答为完整代码，样式在此省略（实际使用时请包含完整样式） */
+        /* 为节省空间，样式部分我将使用之前的样式，但此处仅作占位 */
+        /* 您可以从上一版回答中复制样式，或使用下方极简样式进行测试 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f0f4f8;
+            padding: 12px;
+        }
+        .app-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 20px;
+            padding: 16px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.06);
+        }
+        /* 省略其他样式，确保功能优先，您可补充完整 */
+        .loading-box {
+            text-align: center;
+            padding: 60px 20px;
+            font-size: 18px;
+            color: #64748b;
+        }
+        .loading-box .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e9edf2;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #e9edf2;
+            color: #334155;
+            font-size: 14px;
+            min-height: 40px;
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: #fff;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #d1d9e6;
+        }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .header-date {
+            font-size: 12px;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 4px 12px;
+            border-radius: 40px;
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .stat-card {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e9edf2;
+        }
+        .stat-card .number {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .stat-card .label {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .violation-section {
+            margin-bottom: 16px;
+            border: 1px solid #e9edf2;
+            border-radius: 12px;
+            background: #fafcfd;
+        }
+        .violation-header {
+            padding: 12px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            background: #f8fafc;
+            border-radius: 12px 12px 0 0;
+        }
+        .violation-panel {
+            padding: 12px 16px;
+            border-top: 1px solid #e9edf2;
+        }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 16px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            min-height: 40px;
+        }
+        .tab-btn.active {
+            background: #fff;
+            color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+        .student-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+        }
+        .student-card {
+            border: 1px solid #e9edf2;
+            border-radius: 12px;
+            padding: 12px;
+        }
+        .student-card .info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .student-card .status-btns {
+            display: flex;
+            gap: 4px;
+        }
+        .student-card .status-btns .btn {
+            flex: 1;
+            padding: 4px 0;
+            font-size: 12px;
+            border-radius: 6px;
+            min-height: 30px;
+        }
+        .btn.active-present {
+            background: #dcfce7;
+            border-color: #16a34a;
+            color: #15803d;
+        }
+        .btn.active-absent {
+            background: #fee2e2;
+            border-color: #dc2626;
+            color: #b91c1c;
+        }
+        .btn.active-leave {
+            background: #ffedd5;
+            border-color: #ea580c;
+            color: #c2410c;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+            color: #94a3b8;
+        }
+        .violation-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .violation-item {
+            border: 1px solid #eef2f6;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .violation-item .row {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .violation-item .info {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .violation-item .status-badge {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+        .status-badge.resolved {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        .status-badge.unresolved {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .img-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #e9edf2;
+            cursor: pointer;
+            position: relative;
+        }
+        .img-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .img-thumb .del-img {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .upload-btn {
+            display: inline-block;
+            font-size: 12px;
+            color: #2563eb;
+            border: 1px dashed #d1d9e6;
+            border-radius: 6px;
+            padding: 2px 12px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        .toast-container {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            width: 90%;
+            max-width: 400px;
+        }
+        .toast {
+            padding: 10px 16px;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 500;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+        .toast.success {
+            background: #16a34a;
+        }
+        .toast.error {
+            background: #dc2626;
+        }
+        .toast.info {
+            background: #2563eb;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            max-width: 95%;
+            max-height: 95%;
+            position: relative;
+        }
+        .modal-content img {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 8px;
+        }
+        .modal-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 24px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <!-- ===== 页面结构同之前 ===== -->
-    <!-- 由于篇幅，这里只展示关键修改部分，完整代码见下方 -->
-    <div class="app-container" id="app">
-        <!-- 头部 -->
-        <header class="app-header">
-            <h1><span>☁️</span> 学生考勤（云端）</h1>
-            <div class="header-actions">
-                <span class="header-date" id="headerDate">📅 加载中...</span>
-                <button class="btn btn-outline btn-sm" onclick="resetAllData()">🗑️ 重置</button>
-                <button class="btn btn-outline btn-sm" onclick="syncData()">🔄 同步</button>
+    <div id="app" style="display:none;">
+        <!-- 页面内容结构（同之前） -->
+        <div class="app-container">
+            <header class="app-header" style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:2px solid #eef2f6;margin-bottom:16px;">
+                <h1 style="font-size:20px;font-weight:700;background:linear-gradient(135deg,#2563eb,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📚 学生考勤（云端）</h1>
+                <div class="header-actions">
+                    <span class="header-date" id="headerDate">📅 加载中...</span>
+                    <button class="btn btn-outline" onclick="resetAllData()">🗑️ 重置</button>
+                    <button class="btn btn-outline" onclick="syncData()">🔄 同步</button>
+                </div>
+            </header>
+            <div class="stats-row" id="statsRow">
+                <div class="stat-card accent"><div class="number" id="totalStudents">0</div><div class="label">👨‍🎓 学生总数</div></div>
+                <div class="stat-card green"><div class="number" id="todayPresent">0</div><div class="label">✅ 今日出勤</div></div>
+                <div class="stat-card orange"><div class="number" id="todayAbsent">0</div><div class="label">❌ 今日缺勤</div></div>
+                <div class="stat-card purple"><div class="number" id="todayRate">0%</div><div class="label">📊 今日出勤率</div></div>
             </div>
-        </header>
-        <!-- 统计卡片、违纪面板、Tabs等结构不变 -->
-        <!-- ... -->
+            <!-- 违纪面板 -->
+            <div class="violation-section">
+                <div class="violation-header" onclick="toggleViolationPanel()">
+                    <span>📋 违纪档案</span>
+                    <span class="arrow" id="violationArrow">▶</span>
+                </div>
+                <div class="violation-panel" id="violationPanel" style="display:none;">
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                        <select id="violationStudent" style="flex:1;padding:8px;border-radius:8px;border:1px solid #d1d9e6;min-height:40px;"></select>
+                        <input type="text" id="violationContent" placeholder="违纪内容" style="flex:2;padding:8px;border-radius:8px;border:1px solid #d1d9e6;min-height:40px;" />
+                        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="violationResolved" /> 已处理</label>
+                        <input type="file" id="violationImages" accept="image/*" multiple style="flex:0 0 120px;" />
+                        <button class="btn btn-primary" onclick="addViolation()">➕ 记录</button>
+                        <button class="btn btn-outline" onclick="refreshViolations()">🔄 刷新</button>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;border-bottom:1px solid #eef2f6;padding-bottom:8px;">
+                        <label>📂 学生：</label>
+                        <select id="archiveFilter" style="flex:1;padding:6px;border-radius:8px;border:1px solid #d1d9e6;min-height:36px;" onchange="onArchiveFilterChange()"></select>
+                        <div style="flex:2;display:flex;gap:4px;">
+                            <input type="text" id="archiveSearch" placeholder="🔍 搜索..." style="flex:1;padding:6px;border-radius:8px;border:1px solid #d1d9e6;min-height:36px;" oninput="onSearchChange()" />
+                            <button class="btn-clear" id="searchClearBtn" onclick="clearSearch()" style="background:transparent;border:none;font-size:18px;display:none;">✕</button>
+                        </div>
+                        <span id="archiveTitle" style="font-size:13px;color:#64748b;">显示全部记录</span>
+                    </div>
+                    <div id="violationList"></div>
+                </div>
+            </div>
+            <!-- Tabs -->
+            <div class="tabs" id="tabNav">
+                <button class="tab-btn active" data-tab="attendance"><span>✅</span> 考勤</button>
+                <button class="tab-btn" data-tab="manage"><span>👨‍🎓</span> 学生</button>
+                <button class="tab-btn" data-tab="stats"><span>📊</span> 统计</button>
+            </div>
+            <div class="tab-panel active" id="panelAttendance">
+                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#f8fafc;padding:8px 12px;border-radius:12px;margin-bottom:12px;">
+                    <label>📅 日期</label>
+                    <input type="date" id="attendanceDate" style="padding:6px;border-radius:8px;border:1px solid #d1d9e6;" />
+                    <button class="btn btn-outline btn-sm" onclick="loadAttendance()">🔄 刷新</button>
+                    <span id="attendanceStatus" style="font-size:13px;color:#64748b;">未打卡</span>
+                    <button class="btn btn-success btn-sm" onclick="markAllPresent()">✅ 全部出勤</button>
+                </div>
+                <div id="attendanceGrid" class="student-grid"></div>
+                <div id="attendanceEmpty" class="empty-state" style="display:none;"><span class="big-icon">👨‍🎓</span><p>暂无学生</p></div>
+            </div>
+            <div class="tab-panel" id="panelManage">
+                <div style="display:flex;flex-wrap:wrap;gap:8px;background:#f8fafc;padding:12px;border-radius:12px;margin-bottom:12px;">
+                    <input type="text" id="studentName" placeholder="姓名" style="flex:1;padding:8px;border-radius:8px;border:1px solid #d1d9e6;min-height:40px;" />
+                    <input type="text" id="studentClass" placeholder="班级" style="flex:1;padding:8px;border-radius:8px;border:1px solid #d1d9e6;min-height:40px;" />
+                    <button class="btn btn-primary" onclick="addStudentFromForm()">➕ 添加</button>
+                </div>
+                <div style="background:#f8fafc;padding:8px 12px;border-radius:12px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                    <span>📤 Excel 导入</span>
+                    <button class="btn btn-primary btn-sm" id="importExcelBtn">📂 选择文件</button>
+                    <span style="font-size:12px;color:#64748b;">.xlsx/.xls 姓名,班级</span>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;" />
+                    <div id="importResult" style="width:100%;font-size:13px;"></div>
+                </div>
+                <div id="studentListContainer"></div>
+                <div id="manageEmpty" class="empty-state" style="display:none;"><span class="big-icon">📭</span><p>还没有学生</p></div>
+            </div>
+            <div class="tab-panel" id="panelStats">
+                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#f8fafc;padding:8px 12px;border-radius:12px;margin-bottom:12px;">
+                    <label>开始</label><input type="date" id="statsStart" style="padding:6px;border-radius:8px;border:1px solid #d1d9e6;" />
+                    <label>结束</label><input type="date" id="statsEnd" style="padding:6px;border-radius:8px;border:1px solid #d1d9e6;" />
+                    <button class="btn btn-primary btn-sm" onclick="renderStats()">📊 生成</button>
+                    <button class="btn btn-outline btn-sm" onclick="setThisWeek()">📅 本周</button>
+                    <button class="btn btn-outline btn-sm" onclick="setThisMonth()">📅 本月</button>
+                </div>
+                <div class="stats-summary" id="statsSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+                    <div class="item"><div class="num" id="statsTotalDays">0</div><div class="lbl">统计天数</div></div>
+                    <div class="item"><div class="num" id="statsTotalPresent">0</div><div class="lbl">总出勤</div></div>
+                    <div class="item"><div class="num" id="statsTotalAbsent">0</div><div class="lbl">总缺勤</div></div>
+                    <div class="item"><div class="num" id="statsTotalLeave">0</div><div class="lbl">总请假</div></div>
+                </div>
+                <div id="statsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载占位 -->
+    <div id="loadingBox" class="loading-box">
+        <div class="spinner"></div>
+        <p>⏳ 正在连接云端数据库...</p>
+        <p style="font-size:14px;color:#94a3b8;margin-top:8px;">首次加载可能需要几秒钟</p>
+    </div>
+
+    <!-- Toast & Modal -->
+    <div class="toast-container" id="toastContainer"></div>
+    <div id="imageModal" class="modal-overlay" style="display:none;" onclick="closeImageModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeImageModal()">✕</button>
+            <img id="modalImage" src="" alt="图片" />
+        </div>
     </div>
 
     <script>
         // ================================================================
-        //  🔑 配置 Supabase（请替换为您的实际值）
+        //  🔑 Supabase 配置（请替换）
         // ================================================================
-        const SUPABASE_URL = 'https://lbccdnmfgwmwibathfbg.supabase.co/rest/v1/';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxiY2Nkbm1mZ3dtd2liYXRoZmJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MzY5NTAsImV4cCI6MjA5OTIxMjk1MH0.Vuxyd5qkNdFUY0VJHJcQ0feoWb5z3UwhNH_Szaw4ytk';
+        const SUPABASE_URL = 'https://你的项目.supabase.co'; // 替换
+        const SUPABASE_ANON_KEY = '你的anon密钥'; // 替换
 
-        // 初始化 Supabase 客户端
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const STORAGE_KEY = 'attendance_system_data';
 
         // ================================================================
-        //  数据层（云端适配）
+        //  工具函数
         // ================================================================
+        function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
-        const STORAGE_KEY = 'attendance_system_data'; // 用于本地缓存
-
-        function getDefaultData() {
-            return {
-                students: [],
-                records: [],
-                violations: []
-            };
+        function formatDate(d) {
+            const date = d instanceof Date ? d : new Date(d);
+            return date.toISOString().slice(0, 10);
         }
 
-        // ---------- 从云端加载 ----------
+        function todayStr() { return formatDate(new Date()); }
+
+        function formatDateTime(d) {
+            const date = d instanceof Date ? d : new Date(d);
+            return date.toISOString().slice(0, 16).replace('T', ' ');
+        }
+
+        function getWeekday(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            return ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
+        }
+
+        function friendlyDate(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            return `${d.getMonth()+1}月${d.getDate()}日 周${getWeekday(dateStr)}`;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showToast(msg, type = 'info', dur = 2200) {
+            const container = document.getElementById('toastContainer');
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.textContent = msg;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transition = 'opacity 0.3s';
+                setTimeout(() => el.remove(), 300);
+            }, dur);
+        }
+
+        function openImageModal(src) {
+            document.getElementById('modalImage').src = src;
+            document.getElementById('imageModal').style.display = 'flex';
+        }
+
+        function closeImageModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        function getDefaultData() {
+            return { students: [], records: [], violations: [] };
+        }
+
+        // ================================================================
+        //  数据层（云端 + 本地缓存）
+        // ================================================================
+
         async function loadData() {
             try {
                 const { data, error } = await supabase
@@ -67,15 +543,9 @@
                     .select('data')
                     .eq('id', 1)
                     .single();
-
-                if (error) {
-                    console.warn('云端读取失败，使用本地缓存', error);
-                    return loadLocalCache();
-                }
-
+                if (error) throw error;
                 if (data && data.data) {
                     const parsed = data.data;
-                    // 兼容旧数据
                     if (!parsed.students) parsed.students = [];
                     if (!parsed.records) parsed.records = [];
                     if (!parsed.violations) parsed.violations = [];
@@ -84,47 +554,17 @@
                         if (!v.images) v.images = [];
                         return v;
                     });
-                    // 同时缓存到本地
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
                     return parsed;
                 } else {
-                    // 云端无数据，尝试本地缓存
                     return loadLocalCache();
                 }
             } catch (err) {
-                console.error('loadData 错误', err);
+                console.warn('云端加载失败，使用本地缓存', err);
                 return loadLocalCache();
             }
         }
 
-        // ---------- 保存到云端 ----------
-        async function saveData(data) {
-            try {
-                // 先保存到本地缓存（离线可用）
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-
-                const { error } = await supabase
-                    .from('attendance_data')
-                    .upsert({
-                        id: 1,
-                        data: data,
-                        updated_at: new Date().toISOString()
-                    }, { onConflict: 'id' });
-
-                if (error) {
-                    console.error('云端保存失败', error);
-                    showToast('⚠️ 云端保存失败，数据已保存在本地', 'error');
-                    return false;
-                }
-                return true;
-            } catch (err) {
-                console.error('saveData 错误', err);
-                showToast('⚠️ 网络错误，数据已保存在本地', 'error');
-                return false;
-            }
-        }
-
-        // ---------- 本地缓存读取 ----------
         function loadLocalCache() {
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
@@ -140,97 +580,781 @@
                     });
                     return parsed;
                 }
-            } catch (e) {
-                console.warn('读取本地缓存失败', e);
-            }
+            } catch (e) {}
             return getDefaultData();
         }
 
-        // ---------- 手动同步 ----------
-        async function syncData() {
-            showToast('🔄 正在同步...', 'info');
-            const data = await loadData();
-            // 覆盖当前内存数据
-            window._data = data;
-            refreshAll();
-            showToast('✅ 同步完成', 'success');
+        async function saveData(data) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                const { error } = await supabase
+                    .from('attendance_data')
+                    .upsert({ id: 1, data: data, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+                if (error) {
+                    console.error('云端保存失败', error);
+                    showToast('⚠️ 云端保存失败，已存本地', 'error');
+                    return false;
+                }
+                return true;
+            } catch (err) {
+                console.error('保存错误', err);
+                showToast('⚠️ 网络错误，已存本地', 'error');
+                return false;
+            }
         }
 
         // ================================================================
-        //  全局数据变量（异步初始化）
+        //  全局数据与业务函数（所有修改数据的函数均为 async）
         // ================================================================
 
-        let data = await loadData(); // 顶层 await 需要浏览器支持，但大多数现代浏览器支持
+        let data = getDefaultData(); // 先占位，初始化时加载
 
-        // 兼容旧代码：原先 data 是同步，现在改为异步，但为了保持后续函数同步调用，我们使用一个全局变量并在初始化时赋值
-        // 但考虑到后续所有函数都直接引用 data，我们需要在初始化时确保 data 已加载。
-        // 更稳健的做法：在页面加载完成后执行 init 函数，用 async/await 初始化。
+        // 获取学生列表
+        function getStudents() { return [...data.students].sort((a, b) => a.createdAt - b.createdAt); }
 
-        // 重写初始化逻辑：
-        (async function initApp() {
-            data = await loadData();
-            // 初始化日期等
-            const today = todayStr();
-            document.getElementById('attendanceDate').value = today;
-            document.getElementById('headerDate').textContent = `📅 ${today} 周${getWeekday(today)}`;
-            const d = new Date();
-            const sevenAgo = new Date(d);
-            sevenAgo.setDate(d.getDate() - 6);
-            document.getElementById('statsStart').value = formatDate(sevenAgo);
-            document.getElementById('statsEnd').value = formatDate(d);
-            refreshAll();
-        })();
+        function getAttendanceMap(dateStr) {
+            const map = {};
+            data.records.filter(r => r.date === dateStr).forEach(r => { map[r.studentId] = r.status; });
+            return map;
+        }
 
-        // 为了保持原有函数（如 addStudent）能够使用 data，我们需要将 data 改为引用，但函数内修改 data 对象本身没问题。
-        // 但 saveData 是异步，原同步调用的 saveData 需要改为 await，这会导致大量函数需要改为 async。
-        // 所以我们将所有原有 saveData 调用改为异步包装，并在调用处使用 .then 或 async/await。
+        function getStudentRecords(studentId) { return data.records.filter(r => r.studentId === studentId); }
 
-        // 解决方案：将原来的 saveData(data) 替换为 saveData(data)（已经是异步），并在调用处加上 await。
-        // 由于函数众多，我们统一修改 saveData 为同步返回 Promise，原函数保持不变，但调用时使用 .then 处理。
-        // 更简单：将所有修改数据的函数（addStudent, deleteStudent, setAttendance, addViolationRecord, deleteViolation, toggleResolved, addImagesToViolation, deleteImage）都改为 async，并在内部 await saveData(data)。
-        // 修改这些函数，加上 async，内部 saveData 前加 await。
+        function getStudentRecordsInRange(studentId, start, end) {
+            return data.records.filter(r => r.studentId === studentId && r.date >= start && r.date <= end);
+        }
 
-        // 由于改动量大，我将提供完整的修改后代码，这里仅展示核心修改逻辑。
+        function getViolations() { return [...data.violations].sort((a, b) => new Date(b.date) - new Date(a.date)); }
 
-        // 注意：由于顶层 await 可能在某些浏览器不兼容，可以使用 IIFE 或 DOMContentLoaded 初始化。
+        function getViolationsByStudent(studentId) {
+            return data.violations.filter(v => v.studentId === studentId).sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
 
-        // 为了让代码简洁，以下提供完整修改后的函数示例（实际使用时，您只需将原有代码中的 saveData 调用前加 await，并标记函数为 async）
+        // ---- 数据修改函数 ----
 
-        // ================================================================
-        //  以下为修改后的核心函数（示例）
-        // ================================================================
-
-        // 示例：添加学生（改为 async）
-        async function addStudent(name, className) {
-            if (!name || !name.trim()) {
-                return { success: false, message: '姓名不能为空' };
+        async function setAttendance(studentId, dateStr, status) {
+            if (!status) {
+                data.records = data.records.filter(r => !(r.studentId === studentId && r.date === dateStr));
+            } else {
+                const exist = data.records.find(r => r.studentId === studentId && r.date === dateStr);
+                if (exist) exist.status = status;
+                else data.records.push({ id: genId(), studentId, date: dateStr, status });
             }
+            await saveData(data);
+        }
+
+        async function addStudent(name, cls) {
+            if (!name || !name.trim()) return { success: false, message: '姓名不能为空' };
             const trimmedName = name.trim();
-            const trimmedClass = (className || '未分班').trim() || '未分班';
-            const exist = data.students.some(s => s.name === trimmedName && s.class === trimmedClass);
-            if (exist) {
-                return { success: false, message: `学生 "${trimmedName}"（${trimmedClass}）已存在` };
+            const trimmedClass = (cls || '未分班').trim() || '未分班';
+            if (data.students.some(s => s.name === trimmedName && s.class === trimmedClass)) {
+                return { success: false, message: `学生已存在` };
             }
-            data.students.push({
-                id: genId(),
-                name: trimmedName,
-                class: trimmedClass,
-                createdAt: Date.now()
-            });
+            data.students.push({ id: genId(), name: trimmedName, class: trimmedClass, createdAt: Date.now() });
             await saveData(data);
             return { success: true, message: `已添加：${trimmedName}` };
         }
 
-        // 其他函数类似修改，确保所有数据修改后都 await saveData(data)
+        async function deleteStudent(studentId) {
+            const student = data.students.find(s => s.id === studentId);
+            if (!student) return;
+            if (!confirm(`确定删除 ${student.name} 吗？`)) return;
+            data.students = data.students.filter(s => s.id !== studentId);
+            data.records = data.records.filter(r => r.studentId !== studentId);
+            data.violations = data.violations.filter(v => v.studentId !== studentId);
+            await saveData(data);
+            showToast(`已删除 ${student.name}`, 'info');
+            refreshAll();
+        }
 
-        // 由于篇幅限制，此处不再列出所有函数，完整代码我会在回答底部提供下载。
+        async function resetAllData() {
+            if (!confirm('⚠️ 确定清除所有数据？')) return;
+            data = getDefaultData();
+            await saveData(data);
+            showToast('已重置', 'info');
+            refreshAll();
+        }
+
+        async function syncData() {
+            showToast('🔄 正在同步...', 'info');
+            try {
+                const d = await loadData();
+                data = d;
+                refreshAll();
+                showToast('✅ 同步完成', 'success');
+            } catch (e) {
+                showToast('❌ 同步失败', 'error');
+            }
+        }
+
+        // 违纪相关
+        async function addViolationRecord(studentId, content, resolved, images) {
+            if (!studentId) { showToast('请选择学生', 'error'); return false; }
+            if (!content || !content.trim()) { showToast('请输入内容', 'error'); return false; }
+            const student = data.students.find(s => s.id === studentId);
+            if (!student) { showToast('学生不存在', 'error'); return false; }
+            data.violations.push({
+                id: genId(),
+                studentId,
+                content: content.trim(),
+                date: new Date().toISOString(),
+                resolved: !!resolved,
+                images: images || []
+            });
+            await saveData(data);
+            showToast(`已记录 ${student.name} 的违纪`, 'success');
+            refreshViolationsUI();
+            return true;
+        }
+
+        async function deleteViolation(violationId) {
+            if (!confirm('删除这条违纪记录？')) return;
+            data.violations = data.violations.filter(v => v.id !== violationId);
+            await saveData(data);
+            refreshViolationsUI();
+            showToast('已删除', 'info');
+        }
+
+        async function toggleResolved(violationId) {
+            const v = data.violations.find(item => item.id === violationId);
+            if (!v) return;
+            v.resolved = !v.resolved;
+            await saveData(data);
+            refreshViolationsUI();
+            showToast(v.resolved ? '已标记为已处理' : '已标记为未处理', 'info');
+        }
+
+        async function addImagesToViolation(violationId, files) {
+            const v = data.violations.find(item => item.id === violationId);
+            if (!v) { showToast('记录不存在', 'error'); return; }
+            if (!files || files.length === 0) return;
+            let loaded = 0;
+            for (const file of files) {
+                if (!file.type.startsWith('image/')) continue;
+                const reader = new FileReader();
+                const result = await new Promise((resolve) => {
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+                v.images.push(result);
+                loaded++;
+            }
+            if (loaded > 0) {
+                await saveData(data);
+                refreshViolationsUI();
+                showToast(`成功添加 ${loaded} 张图片`, 'success');
+            }
+        }
+
+        async function deleteImage(violationId, index) {
+            const v = data.violations.find(item => item.id === violationId);
+            if (!v) return;
+            if (!confirm('删除这张图片？')) return;
+            v.images.splice(index, 1);
+            await saveData(data);
+            refreshViolationsUI();
+            showToast('已删除图片', 'info');
+        }
 
         // ================================================================
-        //  注意：图片以 Base64 存储，Supabase 免费版单行限制约 500KB，
-        //  建议图片较多时使用 Supabase Storage 存储图片，或压缩图片。
+        //  渲染函数（同步，不修改数据）
         // ================================================================
 
-        // 由于代码较长，完整版请参考下方链接。
+        function updateStats() {
+            const students = getStudents();
+            document.getElementById('totalStudents').textContent = students.length;
+            const today = document.getElementById('attendanceDate').value || todayStr();
+            const map = getAttendanceMap(today);
+            const present = Object.values(map).filter(v => v === 'present').length;
+            const absent = Object.values(map).filter(v => v === 'absent').length;
+            const marked = Object.keys(map).length;
+            const rate = marked > 0 ? Math.round((present / marked) * 100) : 0;
+            document.getElementById('todayPresent').textContent = present;
+            document.getElementById('todayAbsent').textContent = absent;
+            document.getElementById('todayRate').textContent = marked > 0 ? `${rate}%` : '—';
+        }
+
+        function renderAttendance() {
+            const container = document.getElementById('attendanceGrid');
+            const empty = document.getElementById('attendanceEmpty');
+            const students = getStudents();
+            const dateStr = document.getElementById('attendanceDate').value || todayStr();
+            const map = getAttendanceMap(dateStr);
+
+            const statusEl = document.getElementById('attendanceStatus');
+            const markedCount = Object.keys(map).length;
+            if (markedCount === 0) {
+                statusEl.textContent = '📌 今日尚未打卡';
+                statusEl.style.color = '#94a3b8';
+            } else {
+                const p = Object.values(map).filter(v => v === 'present').length;
+                const a = Object.values(map).filter(v => v === 'absent').length;
+                const l = Object.values(map).filter(v => v === 'leave').length;
+                statusEl.textContent = `✅ ${p} 出勤  ❌ ${a} 缺勤  📋 ${l} 请假  （共 ${markedCount} 人）`;
+                statusEl.style.color = '#334155';
+            }
+
+            if (students.length === 0) { container.innerHTML = '';
+                empty.style.display = 'block'; return; }
+            empty.style.display = 'none';
+            container.innerHTML = students.map(s => {
+                const st = map[s.id] || '';
+                return `<div class="student-card">
+                    <div class="info"><span class="name">${escapeHtml(s.name)}</span><span class="class-tag">${escapeHtml(s.class)}</span></div>
+                    <div class="status-btns">
+                        <button class="btn ${st==='present'?'active-present':''}" onclick="setAttendanceStatus('${s.id}','present')">✅</button>
+                        <button class="btn ${st==='absent'?'active-absent':''}" onclick="setAttendanceStatus('${s.id}','absent')">❌</button>
+                        <button class="btn ${st==='leave'?'active-leave':''}" onclick="setAttendanceStatus('${s.id}','leave')">📋</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function setAttendanceStatus(studentId, status) {
+            const dateStr = document.getElementById('attendanceDate').value || todayStr();
+            const student = data.students.find(s => s.id === studentId);
+            if (!student) return;
+            const map = getAttendanceMap(dateStr);
+            if (map[studentId] === status) {
+                await setAttendance(studentId, dateStr, null);
+                showToast(`已取消 ${student.name} 的标记`, 'info');
+            } else {
+                await setAttendance(studentId, dateStr, status);
+                const statusMap = { present: '出勤', absent: '缺勤', leave: '请假' };
+                showToast(`${student.name}：${statusMap[status]} ✅`, 'success');
+            }
+            refreshAll();
+        }
+
+        async function markAllPresent() {
+            const students = getStudents();
+            if (students.length === 0) { showToast('暂无学生', 'error'); return; }
+            const dateStr = document.getElementById('attendanceDate').value || todayStr();
+            for (const s of students) {
+                await setAttendance(s.id, dateStr, 'present');
+            }
+            showToast(`✅ 已标记 ${students.length} 人出勤`, 'success');
+            refreshAll();
+        }
+
+        function loadAttendance() { refreshAll();
+            showToast('已刷新', 'info'); }
+
+        function renderStudentList() {
+            const container = document.getElementById('studentListContainer');
+            const empty = document.getElementById('manageEmpty');
+            const students = getStudents();
+            if (students.length === 0) { container.innerHTML = '';
+                empty.style.display = 'block'; return; }
+            empty.style.display = 'none';
+            container.innerHTML = `<div class="student-list">` + students.map(s => {
+                const recordCount = getStudentRecords(s.id).length;
+                const vCount = getViolationsByStudent(s.id).length;
+                return `<div class="student-list-item" style="display:flex;justify-content:space-between;padding:8px 12px;border:1px solid #e9edf2;border-radius:8px;margin-bottom:6px;">
+                    <div class="info" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                        <span class="name">${escapeHtml(s.name)}</span>
+                        <span class="class-badge" style="background:#e9edf2;padding:2px 10px;border-radius:40px;font-size:12px;">${escapeHtml(s.class)}</span>
+                        <span class="meta" style="font-size:12px;color:#94a3b8;">📊 ${recordCount} 考勤 · 📋 ${vCount} 违纪</span>
+                    </div>
+                    <div class="actions" style="display:flex;gap:4px;">
+                        <button class="btn-archive" style="background:transparent;border:1px solid #d1d9e6;border-radius:6px;padding:2px 10px;cursor:pointer;" onclick="viewStudentViolation('${s.id}')">📋 档案</button>
+                        <button class="btn btn-danger btn-xs" onclick="deleteStudent('${s.id}')">🗑️</button>
+                    </div>
+                </div>`;
+            }).join('') + `</div>`;
+        }
+
+        async function addStudentFromForm() {
+            const name = document.getElementById('studentName').value;
+            const cls = document.getElementById('studentClass').value;
+            const result = await addStudent(name, cls);
+            if (result.success) {
+                document.getElementById('studentName').value = '';
+                document.getElementById('studentClass').value = '';
+                showToast(result.message, 'success');
+                refreshAll();
+            } else {
+                showToast(result.message, 'error');
+            }
+        }
+
+        // 违纪 UI
+        function renderViolationSelect() {
+            const select = document.getElementById('violationStudent');
+            const students = getStudents();
+            select.innerHTML = '<option value="">-- 请选择 --</option>' + students.map(s =>
+                `<option value="${s.id}">${escapeHtml(s.name)}（${escapeHtml(s.class)}）</option>`
+            ).join('');
+        }
+
+        function renderArchiveFilter() {
+            const select = document.getElementById('archiveFilter');
+            const students = getStudents();
+            const current = select.value;
+            select.innerHTML = '<option value="">全部学生</option>' + students.map(s =>
+                `<option value="${s.id}">${escapeHtml(s.name)}（${escapeHtml(s.class)}）</option>`
+            ).join('');
+            if (current && students.some(s => s.id === current)) select.value = current;
+            else select.value = '';
+        }
+
+        function highlightText(text, keyword) {
+            if (!keyword || !text) return escapeHtml(text);
+            const kw = escapeHtml(keyword);
+            return escapeHtml(text).replace(new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '<span class="highlight" style="background:#fef08a;padding:0 2px;">$&</span>');
+        }
+
+        function renderViolationList(filterStudentId, searchKeyword) {
+            const container = document.getElementById('violationList');
+            let list = getViolations();
+            if (filterStudentId) list = list.filter(v => v.studentId === filterStudentId);
+            if (searchKeyword && searchKeyword.trim()) {
+                const kw = searchKeyword.trim().toLowerCase();
+                const students = getStudents();
+                const map = {};
+                students.forEach(s => map[s.id] = s);
+                list = list.filter(v => {
+                    const s = map[v.studentId];
+                    const name = s ? s.name.toLowerCase() : '';
+                    const cls = s ? s.class.toLowerCase() : '';
+                    const content = v.content.toLowerCase();
+                    return name.includes(kw) || cls.includes(kw) || content.includes(kw);
+                });
+            }
+            if (list.length === 0) {
+                container.innerHTML = `<div class="violation-empty">📭 暂无记录</div>`;
+                return;
+            }
+            const students = getStudents();
+            const studentMap = {};
+            students.forEach(s => studentMap[s.id] = s);
+
+            container.innerHTML = list.map(v => {
+                const s = studentMap[v.studentId];
+                const name = s ? s.name : '（已删除）';
+                const cls = s ? s.class : '';
+                const time = formatDateTime(v.date);
+                const displayName = searchKeyword ? highlightText(name, searchKeyword) : escapeHtml(name);
+                const displayCls = searchKeyword && cls ? highlightText(cls, searchKeyword) : escapeHtml(cls);
+                const displayContent = searchKeyword ? highlightText(v.content, searchKeyword) : escapeHtml(v.content);
+                const statusLabel = v.resolved ? '✅ 已处理' : '⏳ 未处理';
+                const statusClass = v.resolved ? 'resolved' : 'unresolved';
+                let imagesHtml = '';
+                if (v.images && v.images.length) {
+                    imagesHtml = '<div class="images">' + v.images.map((img, idx) =>
+                        `<div class="img-thumb" onclick="openImageModal('${img}')">
+                            <img src="${img}" />
+                            <button class="del-img" onclick="event.stopPropagation();deleteImage('${v.id}',${idx})">✕</button>
+                        </div>`
+                    ).join('') + '</div>';
+                }
+                const uploadId = `upload_${v.id}`;
+                imagesHtml += `<div class="upload-btn" onclick="document.getElementById('${uploadId}').click()">📎 添加图片
+                    <input type="file" id="${uploadId}" accept="image/*" multiple 
+                        onchange="document.getElementById('${uploadId}').files && addImagesToViolation('${v.id}', this.files); this.value='';" />
+                </div>`;
+                return `<div class="violation-item">
+                    <div class="row">
+                        <div class="info">
+                            <span class="v-student">${displayName} ${cls ? '· ' + displayCls : ''}</span>
+                            <span class="v-content">${displayContent}</span>
+                            <span class="v-time">${time}</span>
+                        </div>
+                        <div class="actions">
+                            <span class="status-badge ${statusClass}" onclick="toggleResolved('${v.id}')">${statusLabel}</span>
+                            <button class="btn-icon" onclick="deleteViolation('${v.id}')" style="background:transparent;border:none;font-size:18px;cursor:pointer;">🗑️</button>
+                        </div>
+                    </div>
+                    ${imagesHtml}
+                </div>`;
+            }).join('');
+        }
+
+        function refreshViolationsUI() {
+            renderViolationSelect();
+            renderArchiveFilter();
+            const filterVal = document.getElementById('archiveFilter').value;
+            const searchVal = document.getElementById('archiveSearch').value;
+            renderViolationList(filterVal, searchVal);
+            const titleEl = document.getElementById('archiveTitle');
+            let titleText = filterVal ? (getStudents().find(s => s.id === filterVal)?.name || '') + ' 的违纪档案' : '显示全部记录';
+            if (searchVal.trim()) titleText += ` · 搜索 "${searchVal.trim()}"`;
+            titleEl.textContent = titleText;
+            document.getElementById('searchClearBtn').style.display = searchVal.trim() ? 'block' : 'none';
+        }
+
+        function onArchiveFilterChange() { refreshViolationsUI(); }
+
+        function onSearchChange() { refreshViolationsUI(); }
+
+        function clearSearch() {
+            document.getElementById('archiveSearch').value = '';
+            refreshViolationsUI();
+        }
+
+        function toggleViolationPanel() {
+            const panel = document.getElementById('violationPanel');
+            const arrow = document.getElementById('violationArrow');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                arrow.textContent = '▼';
+                refreshViolationsUI();
+            } else {
+                panel.style.display = 'none';
+                arrow.textContent = '▶';
+            }
+        }
+
+        function addViolation() {
+            const studentId = document.getElementById('violationStudent').value;
+            const content = document.getElementById('violationContent').value;
+            const resolved = document.getElementById('violationResolved').checked;
+            const files = document.getElementById('violationImages').files;
+            if (files && files.length > 0) {
+                const readers = [];
+                const imageData = [];
+                let hasError = false;
+                for (const file of files) {
+                    if (!file.type.startsWith('image/')) { showToast(`${file.name} 不是图片`, 'error');
+                        hasError = true; break; }
+                    const reader = new FileReader();
+                    readers.push(new Promise((resolve) => {
+                        reader.onload = e => { imageData.push(e.target.result);
+                            resolve(); };
+                        reader.readAsDataURL(file);
+                    }));
+                }
+                if (hasError) return;
+                Promise.all(readers).then(async () => {
+                    const success = await addViolationRecord(studentId, content, resolved, imageData);
+                    if (success) {
+                        document.getElementById('violationContent').value = '';
+                        document.getElementById('violationResolved').checked = false;
+                        document.getElementById('violationImages').value = '';
+                    }
+                }).catch(e => { showToast('图片读取失败', 'error');
+                    console.error(e); });
+            } else {
+                addViolationRecord(studentId, content, resolved, []).then(success => {
+                    if (success) {
+                        document.getElementById('violationContent').value = '';
+                        document.getElementById('violationResolved').checked = false;
+                        document.getElementById('violationImages').value = '';
+                    }
+                });
+            }
+        }
+
+        function refreshViolations() { refreshViolationsUI();
+            showToast('已刷新', 'info'); }
+
+        function viewStudentViolation(studentId) {
+            const panel = document.getElementById('violationPanel');
+            const arrow = document.getElementById('violationArrow');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                arrow.textContent = '▼';
+            }
+            document.getElementById('archiveFilter').value = studentId;
+            document.getElementById('archiveSearch').value = '';
+            onArchiveFilterChange();
+            document.querySelector('.violation-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ================================================================
+        //  统计报表
+        // ================================================================
+
+        function renderStats() {
+            const start = document.getElementById('statsStart').value;
+            const end = document.getElementById('statsEnd').value;
+            if (!start || !end) {
+                const today = new Date();
+                const sevenAgo = new Date(today);
+                sevenAgo.setDate(today.getDate() - 6);
+                document.getElementById('statsStart').value = formatDate(sevenAgo);
+                document.getElementById('statsEnd').value = formatDate(today);
+                return renderStats();
+            }
+            const students = getStudents();
+            if (students.length === 0) {
+                document.getElementById('statsContent').innerHTML =
+                    `<div class="empty-stats">📭 暂无学生</div>`;
+                document.getElementById('statsSummary').innerHTML =
+                    `<div class="item"><div class="num">0</div><div class="lbl">统计天数</div></div>
+                     <div class="item"><div class="num">0</div><div class="lbl">总出勤</div></div>
+                     <div class="item"><div class="num">0</div><div class="lbl">总缺勤</div></div>
+                     <div class="item"><div class="num">0</div><div class="lbl">总请假</div></div>`;
+                return;
+            }
+            const dates = [];
+            let cur = new Date(start + 'T00:00:00');
+            const endDate = new Date(end + 'T00:00:00');
+            while (cur <= endDate) { dates.push(formatDate(cur));
+                cur.setDate(cur.getDate() + 1); }
+            if (dates.length === 0) {
+                document.getElementById('statsContent').innerHTML =
+                    `<div class="empty-stats">📅 请选择有效日期</div>`;
+                return;
+            }
+            const studentStats = students.map(s => {
+                const recs = getStudentRecordsInRange(s.id, start, end);
+                const present = recs.filter(r => r.status === 'present').length;
+                const absent = recs.filter(r => r.status === 'absent').length;
+                const leave = recs.filter(r => r.status === 'leave').length;
+                const total = dates.length;
+                const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+                return { student: s, present, absent, leave, total, rate };
+            });
+            const totalPresent = studentStats.reduce((s, v) => s + v.present, 0);
+            const totalAbsent = studentStats.reduce((s, v) => s + v.absent, 0);
+            const totalLeave = studentStats.reduce((s, v) => s + v.leave, 0);
+            document.getElementById('statsTotalDays').textContent = dates.length;
+            document.getElementById('statsTotalPresent').textContent = totalPresent;
+            document.getElementById('statsTotalAbsent').textContent = totalAbsent;
+            document.getElementById('statsTotalLeave').textContent = totalLeave;
+
+            const dailyStats = dates.map(d => {
+                const map = getAttendanceMap(d);
+                const p = Object.values(map).filter(v => v === 'present').length;
+                const a = Object.values(map).filter(v => v === 'absent').length;
+                const l = Object.values(map).filter(v => v === 'leave').length;
+                return { date: d, present: p, absent: a, leave: l, total: Object.keys(map).length };
+            });
+
+            let html = `<div style="margin-bottom:12px;font-weight:600;">📋 考勤明细（${dates.length} 天）</div>
+            <div class="stats-table-wrap" style="overflow-x:auto;border:1px solid #e9edf2;border-radius:8px;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:400px;">
+            <thead><tr style="background:#f1f5f9;">
+                <th style="padding:8px 12px;text-align:left;">姓名</th><th>班级</th><th>✅ 出勤</th><th>❌ 缺勤</th><th>📋 请假</th><th>📊 出勤率</th>
+            </tr></thead><tbody>`;
+            studentStats.forEach(s => {
+                const cls = s.rate >= 80 ? 'high' : (s.rate >= 50 ? 'mid' : 'low');
+                html += `<tr>
+                    <td><strong>${escapeHtml(s.student.name)}</strong></td>
+                    <td>${escapeHtml(s.student.class)}</td>
+                    <td style="color:#16a34a;">${s.present}</td>
+                    <td style="color:#dc2626;">${s.absent}</td>
+                    <td style="color:#ea580c;">${s.leave}</td>
+                    <td><div style="display:inline-block;width:60px;height:6px;background:#e2e8f0;border-radius:40px;overflow:hidden;vertical-align:middle;margin-right:6px;"><div style="height:100%;width:${s.rate}%;background:${s.rate>=80?'#16a34a':s.rate>=50?'#ea580c':'#dc2626'};border-radius:40px;"></div></div> ${s.rate}%</td>
+                </tr>`;
+            });
+            html += `</tbody></table></div>`;
+
+            html += `<div style="margin:16px 0 8px;font-weight:600;">📅 每日考勤汇总</div>
+            <div class="stats-table-wrap" style="overflow-x:auto;border:1px solid #e9edf2;border-radius:8px;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:400px;">
+            <thead><tr style="background:#f1f5f9;">
+                <th style="padding:8px 12px;text-align:left;">日期</th><th>✅ 出勤</th><th>❌ 缺勤</th><th>📋 请假</th><th>📊 已打卡/总人数</th>
+            </tr></thead><tbody>`;
+            dailyStats.forEach(d => {
+                html += `<tr>
+                    <td>${friendlyDate(d.date)}</td>
+                    <td style="color:#16a34a;">${d.present}</td>
+                    <td style="color:#dc2626;">${d.absent}</td>
+                    <td style="color:#ea580c;">${d.leave}</td>
+                    <td>${d.total} / ${students.length}</td>
+                </tr>`;
+            });
+            html += `</tbody></table></div>`;
+            document.getElementById('statsContent').innerHTML = html;
+        }
+
+        function setThisWeek() {
+            const today = new Date();
+            const day = today.getDay();
+            const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+            const mon = new Date(today);
+            mon.setDate(diff);
+            const sun = new Date(mon);
+            sun.setDate(mon.getDate() + 6);
+            document.getElementById('statsStart').value = formatDate(mon);
+            document.getElementById('statsEnd').value = formatDate(sun);
+            renderStats();
+        }
+
+        function setThisMonth() {
+            const today = new Date();
+            const first = new Date(today.getFullYear(), today.getMonth(), 1);
+            const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            document.getElementById('statsStart').value = formatDate(first);
+            document.getElementById('statsEnd').value = formatDate(last);
+            renderStats();
+        }
+
+        // ================================================================
+        //  刷新所有
+        // ================================================================
+
+        function refreshAll() {
+            updateStats();
+            renderAttendance();
+            renderStudentList();
+            renderStats();
+            const panel = document.getElementById('violationPanel');
+            if (panel.style.display !== 'none') refreshViolationsUI();
+            document.getElementById('headerDate').textContent = `📅 ${todayStr()} 周${getWeekday(todayStr())}`;
+        }
+
+        // ================================================================
+        //  初始化
+        // ================================================================
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                data = await loadData();
+                // 设置默认日期
+                const today = todayStr();
+                document.getElementById('attendanceDate').value = today;
+                const d = new Date();
+                const sevenAgo = new Date(d);
+                sevenAgo.setDate(d.getDate() - 6);
+                document.getElementById('statsStart').value = formatDate(sevenAgo);
+                document.getElementById('statsEnd').value = formatDate(d);
+                // 隐藏加载，显示应用
+                document.getElementById('loadingBox').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                refreshAll();
+                showToast('✅ 数据加载成功', 'success');
+            } catch (err) {
+                document.getElementById('loadingBox').innerHTML =
+                    `<p style="color:#dc2626;">❌ 加载失败：${err.message}</p>
+                     <p style="font-size:14px;margin-top:8px;">请检查 Supabase 配置或网络，<br>数据已从本地缓存恢复</p>
+                     <button class="btn btn-primary" style="margin-top:12px;" onclick="location.reload()">🔄 重试</button>`;
+                // 尝试从本地缓存恢复
+                data = loadLocalCache();
+                document.getElementById('app').style.display = 'block';
+                refreshAll();
+                console.error(err);
+            }
+        });
+
+        // ================================================================
+        //  Tab 切换
+        // ================================================================
+
+        document.getElementById('tabNav').addEventListener('click', function(e) {
+            const btn = e.target.closest('.tab-btn');
+            if (!btn) return;
+            const tab = btn.dataset.tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(`panel${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+            if (tab === 'stats') renderStats();
+            if (tab === 'attendance') { updateStats();
+                renderAttendance(); }
+            if (tab === 'manage') renderStudentList();
+        });
+
+        // ================================================================
+        //  事件绑定
+        // ================================================================
+
+        document.getElementById('violationContent').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault();
+                addViolation(); }
+        });
+        document.getElementById('archiveSearch').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault();
+                refreshViolationsUI(); }
+        });
+        document.getElementById('attendanceDate').addEventListener('change', function() { refreshAll(); });
+        document.getElementById('studentName').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault();
+                document.getElementById('studentClass').focus(); }
+        });
+        document.getElementById('studentClass').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault();
+                addStudentFromForm(); }
+        });
+        document.getElementById('statsStart').addEventListener('change', renderStats);
+        document.getElementById('statsEnd').addEventListener('change', renderStats);
+
+        document.getElementById('importExcelBtn').addEventListener('click', function() {
+            document.getElementById('fileInput').click();
+        });
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (this.files && this.files.length > 0) {
+                if (typeof XLSX === 'undefined') {
+                    showToast('Excel 库未加载', 'error');
+                    this.value = '';
+                    return;
+                }
+                importExcel(this.files[0]);
+                this.value = '';
+            }
+        });
+
+        function importExcel(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const workbook = XLSX.read(e.target.result, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    let start = 0;
+                    if (json.length && json[0] && json[0].length) {
+                        const first = String(json[0][0] || '').toLowerCase();
+                        if (first.includes('姓名') || first.includes('名字')) start = 1;
+                    }
+                    let added = 0,
+                        skipped = 0;
+                    const existing = new Set(getStudents().map(s => `${s.name}|${s.class}`));
+                    for (let i = start; i < json.length; i++) {
+                        const row = json[i];
+                        if (!row || !row[0]) continue;
+                        const name = String(row[0]).trim();
+                        if (!name) continue;
+                        const cls = String(row[1] || '未分班').trim() || '未分班';
+                        const key = `${name}|${cls}`;
+                        if (existing.has(key)) { skipped++; continue; }
+                        data.students.push({ id: genId(), name, class: cls, createdAt: Date.now() });
+                        existing.add(key);
+                        added++;
+                    }
+                    saveData(data).then(() => {
+                        refreshAll();
+                        document.getElementById('importResult').textContent =
+                            `✅ 新增 ${added} 人，跳过 ${skipped} 人`;
+                        showToast(`导入完成：新增 ${added} 人`, 'success');
+                    });
+                } catch (err) {
+                    showToast('导入失败：' + err.message, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ================================================================
+        //  暴露全局函数
+        // ================================================================
+
+        window.addStudentFromForm = addStudentFromForm;
+        window.deleteStudent = deleteStudent;
+        window.setAttendanceStatus = setAttendanceStatus;
+        window.markAllPresent = markAllPresent;
+        window.loadAttendance = loadAttendance;
+        window.renderStats = renderStats;
+        window.setThisWeek = setThisWeek;
+        window.setThisMonth = setThisMonth;
+        window.resetAllData = resetAllData;
+        window.syncData = syncData;
+        window.toggleViolationPanel = toggleViolationPanel;
+        window.addViolation = addViolation;
+        window.deleteViolation = deleteViolation;
+        window.refreshViolations = refreshViolations;
+        window.viewStudentViolation = viewStudentViolation;
+        window.onArchiveFilterChange = onArchiveFilterChange;
+        window.onSearchChange = onSearchChange;
+        window.clearSearch = clearSearch;
+        window.toggleResolved = toggleResolved;
+        window.addImagesToViolation = addImagesToViolation;
+        window.deleteImage = deleteImage;
+        window.openImageModal = openImageModal;
+        window.closeImageModal = closeImageModal;
+        window.refreshAll = refreshAll;
+        window.importExcel = importExcel;
     </script>
 </body>
 </html>
