@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
     </script>
     <style>
-        /* ===== 基础重置 & 通用样式 ===== */
+        /* ===== 基础重置 & 通用样式（与之前一致，仅微调） ===== */
         * {
             margin: 0;
             padding: 0;
@@ -298,7 +298,7 @@
             color: #2563eb;
         }
 
-        /* ===== 违纪面板 ===== */
+        /* ===== 违纪面板（与之前相同） ===== */
         .violation-section {
             margin-bottom: 16px;
             border: 1px solid #e9edf2;
@@ -1353,7 +1353,7 @@
             }
         }
 
-        /* ===== 违纪统计 ===== */
+        /* ===== 违纪统计（排名） ===== */
         .stats-toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -1477,7 +1477,7 @@
             }
         }
 
-        /* 违纪统计排名表格 */
+        /* 排名表格 */
         .stats-table-wrap {
             overflow-x: auto;
             border-radius: 10px;
@@ -1570,7 +1570,7 @@
         .stats-table .student-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px;
+            gap: 6px;
         }
         .stats-table .student-tag {
             font-size: 12px;
@@ -1582,9 +1582,20 @@
             transition: 0.2s;
             touch-action: manipulation;
             white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .stats-table .student-tag .count {
+            font-weight: 600;
+            color: #2563eb;
+            margin-left: 2px;
         }
         .stats-table .student-tag:active {
             background: #2563eb;
+            color: #fff;
+        }
+        .stats-table .student-tag:active .count {
             color: #fff;
         }
         @media (min-width: 640px) {
@@ -1594,6 +1605,9 @@
             }
             .stats-table .student-tag:hover {
                 background: #2563eb;
+                color: #fff;
+            }
+            .stats-table .student-tag:hover .count {
                 color: #fff;
             }
         }
@@ -1819,7 +1833,7 @@
         </div>
 
         <!-- ========================================================= -->
-        <!-- TAB 3: 违纪统计（替代原统计报表） -->
+        <!-- TAB 3: 违纪统计（按违纪内容排名，显示每个学生次数） -->
         <!-- ========================================================= -->
         <div class="tab-panel" id="panelStats">
             <div class="stats-toolbar">
@@ -2545,7 +2559,7 @@
         }
 
         // ================================================================
-        //  违纪统计排名（核心新功能）
+        //  违纪统计排名（核心功能，含每个学生的次数）
         // ================================================================
         function renderStats() {
             const startInput = document.getElementById('statsStart');
@@ -2582,23 +2596,25 @@
 
             // ---- 统计汇总 ----
             const totalViolations = allViolations.length;
-            const studentMap = {};
-            const contentMap = {};
+            const studentMap = {}; // 记录涉及的学生（去重）
+            const contentMap = {}; // key: 违纪内容, value: { content, count, studentCounts: { studentId: count } }
 
             allViolations.forEach(v => {
-                // 按内容分组
                 const key = v.content.trim();
                 if (!contentMap[key]) {
-                    contentMap[key] = { content: key, count: 0, studentIds: [] };
+                    contentMap[key] = { content: key, count: 0, studentCounts: {} };
                 }
                 contentMap[key].count++;
-                // 记录涉及的学生（去重）
-                if (!contentMap[key].studentIds.includes(v.studentId)) {
-                    contentMap[key].studentIds.push(v.studentId);
+                // 累加该学生此内容的次数
+                const sid = v.studentId;
+                if (!contentMap[key].studentCounts[sid]) {
+                    contentMap[key].studentCounts[sid] = 0;
                 }
-                // 统计涉及学生总数
-                if (!studentMap[v.studentId]) {
-                    studentMap[v.studentId] = true;
+                contentMap[key].studentCounts[sid]++;
+
+                // 记录涉及学生总数
+                if (!studentMap[sid]) {
+                    studentMap[sid] = true;
                 }
             });
 
@@ -2630,9 +2646,9 @@
                             <tr>
                                 <th style="width:50px;">排名</th>
                                 <th style="min-width:120px;">违纪内容</th>
-                                <th style="width:80px;">次数</th>
-                                <th style="width:120px;">占比</th>
-                                <th>涉及学生</th>
+                                <th style="width:80px;">总次数</th>
+                                <th style="width:100px;">占比</th>
+                                <th>涉及学生（次数）</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2649,19 +2665,23 @@
                     else if (rank === 2) rankClass = 'silver';
                     else if (rank === 3) rankClass = 'bronze';
 
-                    // 进度条颜色
                     let barClass = 'low';
                     if (percentage > 30) barClass = 'high';
                     else if (percentage > 15) barClass = 'mid';
 
-                    // 涉及学生标签
+                    // ---- 生成涉及学生标签（按次数降序） ----
                     let studentTags = '';
-                    if (item.studentIds.length > 0) {
-                        const tags = item.studentIds.map(sid => {
+                    const studentEntries = Object.entries(item.studentCounts);
+                    if (studentEntries.length > 0) {
+                        // 按次数降序排序
+                        studentEntries.sort((a, b) => b[1] - a[1]);
+                        const tags = studentEntries.map(([sid, count]) => {
                             const student = studentNameMap[sid];
-                            if (!student) return '';
+                            if (!student) return null;
                             const displayName = escapeHtml(student.name);
-                            return `<span class="student-tag" onclick="viewStudentViolation('${sid}')" title="查看 ${displayName} 的违纪档案">${displayName}</span>`;
+                            return `<span class="student-tag" onclick="viewStudentViolation('${sid}')" title="查看 ${displayName} 的违纪档案">
+                                        ${displayName}<span class="count">(${count})</span>
+                                    </span>`;
                         }).filter(t => t);
                         studentTags = `<div class="student-tags">${tags.join('')}</div>`;
                     } else {
@@ -2729,7 +2749,6 @@
             updateStats();
             renderAttendance();
             renderStudentList();
-            // 只在违纪统计Tab可见时刷新
             const statsPanel = document.getElementById('panelStats');
             if (statsPanel.classList.contains('active')) {
                 renderStats();
@@ -2886,7 +2905,6 @@
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
             document.getElementById(`panel${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
             if (tab === 'stats') {
-                // 首次打开或切换到统计时，如果日期为空则设置默认值并渲染
                 const start = document.getElementById('statsStart').value;
                 const end = document.getElementById('statsEnd').value;
                 if (!start || !end) {
@@ -2955,7 +2973,6 @@
             sortField = 'studentId';
             sortAsc = true;
             refreshAll();
-            // 初始渲染统计
             setTimeout(() => renderStats(), 100);
         })();
 
